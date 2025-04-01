@@ -27,7 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'NINGUNA',
   ];
 
-  final AuthService _authService = AuthService();  // Instanciamos el servicio directamente
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -35,82 +35,92 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: Text("Registro")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Nombre de Usuario'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa tu nombre de usuario';
-                  }
-                  return null;
-                },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(labelText: 'Nombre de Usuario'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingresa tu nombre de usuario';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(labelText: 'Correo Electrónico'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingresa tu correo electrónico';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: 'Contraseña'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingresa tu contraseña';
+                      }
+                      return null;
+                    },
+                  ),
+                  DropdownButton<String>(
+                    value: _role,
+                    onChanged: (newValue) {
+                      setState(() {
+                        _role = newValue!;
+                        if (_role == 'PROFESOR') {
+                          _oposicion = 'NINGUNA';
+                        }
+                      });
+                    },
+                    items: ['PROFESOR', 'OPOSITOR'].map((role) {
+                      return DropdownMenuItem<String>(
+                        value: role,
+                        child: Text(role),
+                      );
+                    }).toList(),
+                  ),
+                  if (_role == 'OPOSITOR')
+                    DropdownButton<String>(
+                      value: _oposicion,
+                      onChanged: (newValue) {
+                        setState(() {
+                          _oposicion = newValue!;
+                        });
+                      },
+                      items: _oposiciones.map((oposicion) {
+                        return DropdownMenuItem<String>(
+                          value: oposicion,
+                          child: Text(oposicion),
+                        );
+                      }).toList(),
+                    ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    child: Text('Registrar'),
+                  ),
+                  SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                    child: Text('¿Ya tienes una cuenta? Inicia sesión aquí'),
+                  ),
+                ],
               ),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Correo Electrónico'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa tu correo electrónico';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'Contraseña'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa tu contraseña';
-                  }
-                  return null;
-                },
-              ),
-              DropdownButton<String>(
-                value: _role,
-                onChanged: (newValue) {
-                  setState(() {
-                    _role = newValue!;
-                    if (_role == 'PROFESOR') {
-                      _oposicion = 'NINGUNA';
-                    }
-                  });
-                },
-                items: ['PROFESOR', 'OPOSITOR'].map((role) {
-                  return DropdownMenuItem<String>(
-                    value: role,
-                    child: Text(role),
-                  );
-                }).toList(),
-              ),
-              if (_role == 'OPOSITOR') ...[
-                DropdownButton<String>(
-                  value: _oposicion,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _oposicion = newValue!;
-                    });
-                  },
-                  items: _oposiciones.map((oposicion) {
-                    return DropdownMenuItem<String>(
-                      value: oposicion,
-                      child: Text(oposicion),
-                    );
-                  }).toList(),
-                ),
-              ],
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: Text('Registrar'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -137,6 +147,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 }
-
-
-
