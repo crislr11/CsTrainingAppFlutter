@@ -1,9 +1,9 @@
 import 'package:cs_training_app/screens/home_screen.dart';
-import 'package:cs_training_app/screens/register_screen.dart';
+import 'package:cs_training_app/screens/auth/register_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../screens/login_screen.dart';
+import '../screens/auth/login_screen.dart';
 
 class AppRoutes {
   static const String register = '/register';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'profile_screen.dart';
+import 'user/profile_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -10,24 +10,30 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  String _role = "OPOSITOR";
 
-  String _nombre = 'Cargando...';
-  String _oposicion = 'Cargando...';
-  String _role = 'Cargando...';
-
-  static List<Widget> _widgetOptions = <Widget>[
-    const Center(child: Text("Home")),
+  static List<Widget> _opositorScreens = <Widget>[
+    const Center(child: Text("Pantalla de Opositor")),
     ProfileScreen(),
     SettingsScreen(),
   ];
 
-  // Función para cargar los datos de SharedPreferences
+  static List<Widget> _adminScreens = <Widget>[
+    const Center(child: Text("Pantalla de Administrador")),
+    ProfileScreen(),
+    SettingsScreen(),
+  ];
+
+  static List<Widget> _profesorScreens = <Widget>[
+    const Center(child: Text("Pantalla de Profesor")),
+    ProfileScreen(),
+    SettingsScreen(),
+  ];
+
   _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _nombre = prefs.getString('nombre') ?? "Desconocido";
-      _oposicion = prefs.getString('oposicion') ?? "No definida";
-      _role = prefs.getString('role') ?? "Usuario";
+      _role = prefs.getString('role') ?? "OPOSITOR";
     });
   }
 
@@ -40,59 +46,80 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Cargar los datos cuando se inicialice el widget
+    _loadUserData();
   }
 
   @override
   Widget build(BuildContext context) {
+    List<BottomNavigationBarItem> _bottomNavItems;
+    List<Widget> _screens;
+    String _appBarTitle = "Home";
+
+    // Ajustamos las pantallas y el título según el rol
+    if (_role == "ADMIN") {
+      _bottomNavItems = [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
+        BottomNavigationBarItem(icon: Icon(Icons.manage_accounts), label: "Gestionar"),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
+      ];
+      _screens = _adminScreens;
+      _appBarTitle = _selectedIndex == 0
+          ? "Inicio"
+          : _selectedIndex == 1
+          ? "Gestionar"
+          : "Ajustes";
+    } else if (_role == "PROFESOR") {
+      _bottomNavItems = [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
+        BottomNavigationBarItem(icon: Icon(Icons.school), label: "Clases"),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
+      ];
+      _screens = _profesorScreens;
+      _appBarTitle = _selectedIndex == 0
+          ? "Inicio"
+          : _selectedIndex == 1
+          ? "Clases"
+          : "Ajustes";
+    } else {
+      _bottomNavItems = [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
+        BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "Perfil"),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
+      ];
+      _screens = _opositorScreens;
+      _appBarTitle = _selectedIndex == 0
+          ? "Inicio"
+          : _selectedIndex == 1
+          ? "Perfil"
+          : "Ajustes";
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Home Screen"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-        ],
+        title: Text(
+          _appBarTitle,
+          style: TextStyle(color: Color(0xFFFFD700)),
+        ),
+        backgroundColor: Colors.grey[900],
+        iconTheme: IconThemeData(color: Colors.grey[800]),
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.grey[800]),
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/login');
+          },
+        ),
       ),
-      body: Column(
-        children: [
-          // Mostrar los datos del usuario en la pantalla
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Nombre: $_nombre', style: TextStyle(fontSize: 18)),
-                Text('Oposición: $_oposicion', style: TextStyle(fontSize: 18)),
-                Text('Role: $_role', style: TextStyle(fontSize: 18)),
-              ],
-            ),
-          ),
-          // Mostrar la vista seleccionada
-          Expanded(child: _widgetOptions.elementAt(_selectedIndex)),
-        ],
-      ),
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        items: _bottomNavItems,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+        backgroundColor: Colors.grey[900],
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.yellow,
       ),
     );
   }
+
 }
