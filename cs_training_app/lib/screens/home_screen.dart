@@ -1,5 +1,9 @@
+import 'package:cs_training_app/screens/profesor/mis_clases_screen.dart';
+import 'package:cs_training_app/screens/user/list_clases_opo_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'admin/clases_screen.dart';
+import 'admin/usuarios_screen.dart';
 import 'user/profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -12,28 +16,16 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String _role = "OPOSITOR";
 
-  static List<Widget> _opositorScreens = <Widget>[
-    const Center(child: Text("Pantalla de Opositor")),
-    ProfileScreen(),
-    SettingsScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
-  static List<Widget> _adminScreens = <Widget>[
-    const Center(child: Text("Pantalla de Administrador")),
-    ProfileScreen(),
-    SettingsScreen(),
-  ];
-
-  static List<Widget> _profesorScreens = <Widget>[
-    const Center(child: Text("Pantalla de Profesor")),
-    ProfileScreen(),
-    SettingsScreen(),
-  ];
-
-  _loadUserData() async {
+  Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _role = prefs.getString('role') ?? "OPOSITOR";
+      _role = prefs.getString('role') ?? "ADMIN";
     });
   }
 
@@ -44,54 +36,60 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    List<BottomNavigationBarItem> _bottomNavItems;
-    List<Widget> _screens;
-    String _appBarTitle = "Home";
+    List<Widget> _screens = [];
+    List<BottomNavigationBarItem> _navItems = [];
+    String _appBarTitle = "Inicio";
 
-    // Ajustamos las pantallas y el título según el rol
-    if (_role == "ADMIN") {
-      _bottomNavItems = [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
-        BottomNavigationBarItem(icon: Icon(Icons.manage_accounts), label: "Gestionar"),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
-      ];
-      _screens = _adminScreens;
-      _appBarTitle = _selectedIndex == 0
-          ? "Inicio"
-          : _selectedIndex == 1
-          ? "Gestionar"
-          : "Ajustes";
-    } else if (_role == "PROFESOR") {
-      _bottomNavItems = [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
-        BottomNavigationBarItem(icon: Icon(Icons.school), label: "Clases"),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
-      ];
-      _screens = _profesorScreens;
-      _appBarTitle = _selectedIndex == 0
-          ? "Inicio"
-          : _selectedIndex == 1
-          ? "Clases"
-          : "Ajustes";
-    } else {
-      _bottomNavItems = [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
-        BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "Perfil"),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Ajustes"),
-      ];
-      _screens = _opositorScreens;
-      _appBarTitle = _selectedIndex == 0
-          ? "Inicio"
-          : _selectedIndex == 1
-          ? "Perfil"
-          : "Ajustes";
+    switch (_role) {
+      case "ADMIN":
+        _screens = [
+          Center(child: Text("Inicio Admin")),
+          UsuariosScreen(),
+          ClasesScreen(),
+        ];
+        _navItems = [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: "Usuarios"),
+          BottomNavigationBarItem(icon: Icon(Icons.class_), label: "Clases"),
+        ];
+        _appBarTitle = _selectedIndex == 0
+            ? "Inicio"
+            : _selectedIndex == 1
+            ? "Usuarios"
+            : "Clases";
+        break;
+
+      case "PROFESOR":
+        _screens = [
+          MisClasesScreen(),
+          ProfileScreen(),
+        ];
+        _navItems = [
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: "Mis Clases"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
+        ];
+        _appBarTitle = _selectedIndex == 0 ? "Mis Clases" : "Perfil";
+        break;
+
+      case "OPOSITOR":
+      default:
+        _screens = [
+          MisClasesScreen(),
+          ListClasesOpoScreen(),
+          ProfileScreen(),
+        ];
+        _navItems = [
+          BottomNavigationBarItem(icon: Icon(Icons.event_note), label: "Mis Clases"),
+          BottomNavigationBarItem(icon: Icon(Icons.class_), label: "Clases"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Perfil"),
+        ];
+        _appBarTitle = _selectedIndex == 0
+            ? "Mis Clases"
+            : _selectedIndex == 1
+            ? "Clases"
+            : "Perfil";
+        break;
     }
 
     return Scaffold(
@@ -112,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: _bottomNavItems,
+        items: _navItems,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         backgroundColor: Colors.grey[900],
@@ -121,5 +119,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }

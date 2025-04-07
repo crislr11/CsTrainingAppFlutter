@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CS Training App',
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.home,
       onGenerateRoute: AppRoutes.generateRoute,
     );
   }
