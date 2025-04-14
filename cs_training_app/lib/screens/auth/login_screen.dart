@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cs_training_app/models/login_request.dart';
+import 'package:cs_training_app/models/user.dart'; // Importa la clase User
 import 'package:cs_training_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../models/auth_response.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -27,13 +30,22 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await AuthService().login(loginRequest);
 
       if (response != null && response['token'] != null) {
+        // Convertir AuthResponse a User
+        User user = User.fromAuthResponse(AuthResponse.fromJson(response));
+
+        // Guardar el token y los detalles del usuario en SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', response['token']);
-        await prefs.setString('nombre', response['nombre'] ?? "Desconocido");
-        await prefs.setString('oposicion', response['oposicion'] ?? "No definida");
-        await prefs.setString('role', response['role'] ?? "Usuario");
+        await prefs.setString('nombre', user.nombre ?? "Desconocido");
+        await prefs.setString('oposicion', user.oposicion ?? "No definida");
+        await prefs.setString('role', user.role ?? "Usuario");
 
-        Navigator.pushReplacementNamed(context, '/home');
+        // Redirigir según el rol
+        if (user.role == "ADMIN") {
+          Navigator.pushReplacementNamed(context, '/admin_home');
+        } else {
+          Navigator.pushReplacementNamed(context, '/registro');
+        }
       } else {
         _showErrorDialog("No se pudo iniciar sesión. Verifica tus credenciales.");
       }
