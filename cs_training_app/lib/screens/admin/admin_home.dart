@@ -298,7 +298,11 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _crearBoton(String texto, IconData icono) {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: () {
+        if (texto == 'Activar') {
+          Navigator.pushNamed(context, '/activar_usuarios');
+        }
+      },
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.all(10),
         backgroundColor: amarillo,
@@ -311,11 +315,7 @@ class _AdminHomeState extends State<AdminHome> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icono,
-            color: negro,
-            size: 26,
-          ),
+          Icon(icono, color: negro, size: 26),
           const SizedBox(height: 8),
           Text(
             texto,

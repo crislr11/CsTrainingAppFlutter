@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cs_training_app/models/login_request.dart';
-import 'package:cs_training_app/models/user.dart'; // Importa la clase User
+import 'package:cs_training_app/models/user.dart';
 import 'package:cs_training_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../models/auth_response.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -29,18 +28,28 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await AuthService().login(loginRequest);
 
+      print("Respuesta de login: $response");  // Imprimir la respuesta completa de login
+
       if (response != null && response['token'] != null) {
-        // Convertir AuthResponse a User
+        // Procesar la respuesta y crear el objeto User
         User user = User.fromAuthResponse(AuthResponse.fromJson(response));
 
-        // Guardar el token y los detalles del usuario en SharedPreferences
+        print("Usuario después de parsear: ${user.nombreUsuario}, ${user.oposicion}, ${user.role}, ${user.id}");  // Imprimir los valores del usuario
+
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', response['token']);
-        await prefs.setString('nombre', user.nombre ?? "Desconocido");
-        await prefs.setString('oposicion', user.oposicion ?? "No definida");
-        await prefs.setString('role', user.role ?? "Usuario");
 
-        // Redirigir según el rol
+        // Ver los valores antes de guardarlos en SharedPreferences
+        print("Guardando en SharedPreferences:");
+        print("Token: ${response['token']}");
+        print("Nombre Usuario: ${user.nombreUsuario}");
+        print("Oposición: ${user.oposicion}");
+        print("Rol: ${user.role}");
+
+        await prefs.setString('nombreUsuario', user.nombreUsuario);
+        await prefs.setString('oposicion', user.oposicion);
+        await prefs.setString('role', user.role);
+
         if (user.role == "ADMIN") {
           Navigator.pushReplacementNamed(context, '/admin_home');
         } else {
@@ -50,11 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
         _showErrorDialog("No se pudo iniciar sesión. Verifica tus credenciales.");
       }
     } catch (e) {
+      print("Error: $e");  // Imprimir el error en caso de excepción
       _showErrorDialog(e.toString());
     } finally {
       setState(() => _isLoading = false);
     }
+
   }
+
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -77,15 +89,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Imagen de fondo
           Positioned.fill(
             child: Image.asset(
               'assets/images/cs.jpg',
               fit: BoxFit.cover,
             ),
           ),
-
-          // Cuadro semitransparente
           Center(
             child: Container(
               width: MediaQuery.of(context).size.width * 0.80,
@@ -108,23 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Título de la pantalla
                     Text(
                       "INICIAR SESIÓN",
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
-                        color: Colors.yellow, // Amarillo
+                        color: Colors.yellow,
                       ),
                     ),
                     SizedBox(height: 20),
-
-                    // Campo de correo con estilo similar al de registro
                     TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Colors.grey[300], // Fondo más claro
+                        fillColor: Colors.grey[300],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -143,38 +149,34 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     SizedBox(height: 20),
-
-                    // Campo de contraseña con estilo similar al de registro
                     TextFormField(
                       controller: _passwordController,
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Colors.grey[300], // Fondo más claro
+                        fillColor: Colors.grey[300],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                        prefixIcon: Icon(Icons.lock, color: Colors.black), // Icono de contraseña
+                        prefixIcon: Icon(Icons.lock, color: Colors.black),
                       ),
                       style: TextStyle(color: Colors.black),
                       obscureText: true,
                       validator: (value) => value!.isEmpty ? "Ingrese su contraseña" : null,
                     ),
                     SizedBox(height: 20),
-
-                    // Botón de login con icono
                     _isLoading
                         ? CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow), // Amarillo
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow),
                     )
                         : ElevatedButton.icon(
                       onPressed: _login,
                       label: Text(
                         "Iniciar Sesión",
                         style: TextStyle(
-                          fontSize: 18, // Tamaño de fuente ajustado para el botón
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.yellow, // Color del texto
+                          color: Colors.yellow,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -186,7 +188,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     SizedBox(height: 20),
-                    // Enlace a registro
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/register');
@@ -194,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Aun no tienes cuenta? Pulsa aqui',
                         style: TextStyle(
-                          color: Colors.yellow, // Color amarillo
+                          color: Colors.yellow,
                         ),
                       ),
                     )
