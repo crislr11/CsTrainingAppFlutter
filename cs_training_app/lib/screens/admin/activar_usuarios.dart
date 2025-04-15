@@ -15,7 +15,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
   String selectedOposicion = 'todos';
   String selectedRole = 'todos';
   String searchQuery = '';
-  bool? showOnlyActive; // null = todos, true = activos, false = inactivos
+  bool? showOnlyActive;
 
   final amarillo = const Color(0xFFFFC107);
   final negro = Colors.black;
@@ -44,7 +44,6 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       setState(() {
         users = (allUsers ?? []).where((user) => user.role != 'ADMIN').toList();
       });
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cargar los usuarios: $e')),
@@ -73,6 +72,74 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
     }
   }
 
+  Future<void> _editUserDialog(User user) async {
+    final nombreController = TextEditingController(text: user.nombreUsuario);
+    final creditosController = TextEditingController(text: user.creditos.toString());
+    bool pagado = user.pagado;
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar usuario'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
+            ),
+            TextField(
+              controller: creditosController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Créditos'),
+            ),
+            Row(
+              children: [
+                const Text('Pagado'),
+                Checkbox(
+                  value: pagado,
+                  onChanged: (value) {
+                    setState(() {
+                      pagado = value ?? false;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final updatedUser = {
+                  'nombreUsuario': nombreController.text,
+                  'creditos': int.tryParse(creditosController.text) ?? 0,
+                  'pagado': pagado,
+                };
+
+                await AdminService().updateUser(user.id, updatedUser);
+
+                Navigator.pop(context);
+                _loadUsers();
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error al actualizar el usuario: $e')),
+                );
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _resetFilters() {
     setState(() {
       selectedOposicion = 'todos';
@@ -86,6 +153,45 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
     setState(() {
       showOnlyActive = showOnlyActive == active ? null : active;
     });
+  }
+
+  // Método para confirmar eliminación
+  Future<void> _confirmDeleteUser(int id) async {
+    // Muestra el diálogo de confirmación
+    final confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Eliminar perfil'),
+          content: const Text('¿Estás seguro de que quieres eliminar este perfil?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Si la respuesta es sí (true), proceder a eliminar el usuario
+    if (confirmDelete == true) {
+      try {
+        await AdminService().deleteUser(id); // Aquí se debe implementar el método de eliminación
+        _loadUsers(); // Vuelve a cargar los usuarios después de eliminar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuario eliminado correctamente')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar el usuario: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -163,16 +269,16 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
             const SizedBox(height: 16),
 
             // Campo de búsqueda
-            Autocomplete<User>(
+            Autocomplete<User>(  // Autocomplete
               optionsBuilder: (TextEditingValue textEditingValue) {
                 final filteredUsers = getFilteredUsers(textEditingValue.text);
                 return filteredUsers.where((user) =>
                     user.nombreUsuario.toLowerCase().startsWith(textEditingValue.text.toLowerCase())).toList();
               },
-              displayStringForOption: (User user) => user.nombreUsuario, // Cambiar aquí
+              displayStringForOption: (User user) => user.nombreUsuario,
               onSelected: (User selectedUser) {
                 setState(() {
-                  searchQuery = selectedUser.nombreUsuario; // Cambiar aquí
+                  searchQuery = selectedUser.nombreUsuario;
                 });
               },
               fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -225,16 +331,16 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
 
-            // Lista de usuarios
+            // Lista de usuarios con el diseño cuadrado
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisCount: 2, // 2 cuadros por fila
+                  crossAxisSpacing: 8.0,
+                  mainAxisSpacing: 8.0,
+                  childAspectRatio: 1, // Cuadrados
                 ),
                 itemCount: getFilteredUsers(searchQuery).length,
                 itemBuilder: (context, index) {
@@ -243,27 +349,43 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                     onDoubleTap: () => _toggleUserStatus(user.id),
                     child: Card(
                       color: user.active ? Colors.green : Colors.red,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              user.nombreUsuario,  // Cambiar aquí
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.white),
+                              onPressed: () {
+                                _confirmDeleteUser(user.id); // Llama a la confirmación de eliminación
+                              },
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              user.oposicion,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white),
+                          ),
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  user.nombreUsuario,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  user.oposicion,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   );

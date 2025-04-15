@@ -7,7 +7,8 @@ class User {
   final String oposicion;
   final String role;
   final bool active;
-
+  final int creditos;
+  final bool pagado;
   User({
     required this.id,
     required this.nombre,
@@ -15,6 +16,8 @@ class User {
     required this.oposicion,
     required this.role,
     required this.active,
+    required this.creditos,
+    required this.pagado
   });
 
   factory User.fromAuthResponse(AuthResponse authResponse) {
@@ -25,6 +28,8 @@ class User {
       oposicion: authResponse.oposicion ?? "NINGUNA",  // Si es nulo, asignamos "NINGUNA"
       role: authResponse.role ?? "Usuario",  // Si es nulo, asignamos "Usuario"
       active: true, // Definimos el valor por defecto como `true`
+      creditos: authResponse.creditos ?? 0,
+      pagado: authResponse.pagado
     );
   }
 
@@ -36,6 +41,8 @@ class User {
       oposicion: json['oposicion'] ?? "NINGUNA",  // Si es nulo, asignamos "NINGUNA"
       role: json['role'] ?? "Usuario",  // Si es nulo, asignamos "Usuario"
       active: json['active'] ?? false,  // Si es nulo, asignamos `false`
+      creditos: json['creditos'] ?? 0,
+      pagado: json['pagado']
     );
   }
 
@@ -47,6 +54,7 @@ class User {
       'oposicion': oposicion,
       'role': role,
       'active': active,
+      'creditos':creditos
     };
   }
 }

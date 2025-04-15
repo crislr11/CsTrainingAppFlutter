@@ -5,6 +5,8 @@ class AuthResponse {
   final String oposicion;
   final String role;
   final int id;
+  final int creditos;
+  final bool pagado;
 
   AuthResponse({
     required this.token,
@@ -13,6 +15,8 @@ class AuthResponse {
     required this.oposicion,
     required this.role,
     required this.id,
+    required this.creditos,
+    required this.pagado
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class AuthResponse {
       oposicion: json['oposicion'] ?? "No definida",
       role: json['role'] ?? "Usuario",
       id: json['id'] ?? 0,
+      creditos: json['creditos'] ?? 0,
+      pagado: json['pagado']
     );
   }
 
@@ -36,6 +42,8 @@ class AuthResponse {
       'oposicion': oposicion,
       'role': role,
       'id': id,
+      'creditos':creditos,
+      'pagado':pagado
     };
   }
 }
