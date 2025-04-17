@@ -360,7 +360,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                             child: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.white),
                               onPressed: () {
-                                _confirmDeleteUser(user.id); // Llama a la confirmación de eliminación
+                                _confirmDeleteUser(user.id);
                               },
                             ),
                           ),

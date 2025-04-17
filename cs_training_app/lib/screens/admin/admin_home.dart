@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../models/user.dart';
+import '../../routes/routes.dart';
 import '../../services/admin_services.dart';
 
 class AdminHome extends StatefulWidget {
@@ -299,9 +300,10 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _crearBoton(String texto, IconData icono) {
     return ElevatedButton(
       onPressed: () {
-        if (texto == 'Activar') {
+        if (texto == 'Activar')
           Navigator.pushNamed(context, '/activar_usuarios');
-        }
+        else if (texto == 'Clases')
+          Navigator.pushNamed(context, AppRoutes.clasesAdmin); // Se usa la ruta definida en AppRoutes
       },
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.all(10),
