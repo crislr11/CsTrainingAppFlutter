@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -6,9 +8,12 @@ import '../../models/entrenamiento.dart';
 import '../../models/user.dart';
 import '../../services/admin_services.dart';
 import '../../services/entrenamiento_service.dart';
+import '../../routes/routes.dart';  // Asegúrate de importar las rutas si las usas
 
 class CrearClaseScreen extends StatefulWidget {
-  const CrearClaseScreen({super.key});
+  final Entrenamiento? entrenamiento;
+
+  const CrearClaseScreen({super.key, this.entrenamiento});
 
   @override
   State<CrearClaseScreen> createState() => _CrearClaseScreenState();
@@ -34,7 +39,6 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
     'GUARDIA_CIVIL',
     'SERVICIO_VIGILANCIA_ADUANERA',
     'INGRESO_FUERZAS_ARMADAS',
-    'NINGUNA',
   ];
 
   final List<String> lugares = ['NAVE', 'PISTA'];
@@ -50,18 +54,28 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
       final usuarios = await _adminService.getAllUsers();
       setState(() {
         profesoresDisponibles = usuarios.where((u) => u.role == 'PROFESOR').toList();
+
+        // Si estamos editando, inicializamos los valores
+        final entrenamiento = widget.entrenamiento;
+        if (entrenamiento != null) {
+          oposicionSeleccionada = entrenamiento.oposicion;
+          lugarSeleccionado = entrenamiento.lugar;
+          fechaSeleccionada = DateTime.parse(entrenamiento.fecha);
+          if (entrenamiento.profesores.length >= 2) {
+            profesor1 = profesoresDisponibles.firstWhere((p) => p.id == entrenamiento.profesores[0].id);
+            profesor2 = profesoresDisponibles.firstWhere((p) => p.id == entrenamiento.profesores[1].id);
+          }
+        }
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar profesores: $e')),
-      );
+      // Ya no mostramos el SnackBar en caso de error
     }
   }
 
   Future<void> _seleccionarFecha() async {
     final DateTime? fecha = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: fechaSeleccionada ?? DateTime.now(),
       firstDate: DateTime(2023),
       lastDate: DateTime(2100),
     );
@@ -69,7 +83,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
     if (fecha != null) {
       final TimeOfDay? hora = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.now(),
+        initialTime: TimeOfDay.fromDateTime(fechaSeleccionada ?? DateTime.now()),
       );
 
       if (hora != null) {
@@ -87,40 +101,44 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
   }
 
   Future<void> _guardarClase() async {
-    if (!_formKey.currentState!.validate() || profesor1 == null || profesor2 == null || fechaSeleccionada == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa todos los campos')),
-      );
-      return;
+    if (!_formKey.currentState!.validate()) {
+      return; // Ya no mostramos el SnackBar de fallo
+    }
+
+    if (profesor1 == null || profesor2 == null || fechaSeleccionada == null) {
+      return; // Ya no mostramos el SnackBar de fallo
     }
 
     final nuevoEntrenamiento = Entrenamiento(
-      id: 0,
+      id: widget.entrenamiento?.id,
       oposicion: oposicionSeleccionada!,
-      profesores: [profesor1!.nombreUsuario, profesor2!.nombreUsuario],
-      alumnos: [],
-      fecha: fechaSeleccionada!.toIso8601String(),
+      profesores: [profesor1!, profesor2!],
+      alumnos: widget.entrenamiento?.alumnos ?? [],
+      fecha: fechaSeleccionada!.toIso8601String(),  // Guardar la fecha en formato ISO 8601
       lugar: lugarSeleccionado!,
     );
 
     try {
-      await _entrenamientoService.createTraining(nuevoEntrenamiento);
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Clase creada con éxito')),
-      );
+      if (widget.entrenamiento == null) {
+        // Si es una creación
+        await _entrenamientoService.createTraining(nuevoEntrenamiento);
+      } else {
+        // Si es una actualización
+        await _entrenamientoService.updateTraining(nuevoEntrenamiento.id!, nuevoEntrenamiento);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear clase: $e')),
-      );
+
     }
+
+    Navigator.pushNamed(context, AppRoutes.clasesAdmin);
   }
 
   @override
   Widget build(BuildContext context) {
+    final esEdicion = widget.entrenamiento != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Clase'),
+        title: Text(esEdicion ? 'Editar Clase' : 'Crear Clase'),
         backgroundColor: const Color(0xFFFFC107),
       ),
       body: Padding(
@@ -130,6 +148,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
           child: ListView(
             children: [
               DropdownButtonFormField<String>(
+                value: oposicionSeleccionada,
                 decoration: const InputDecoration(labelText: 'Oposición'),
                 items: oposiciones.map((op) => DropdownMenuItem(value: op, child: Text(op))).toList(),
                 onChanged: (value) => setState(() => oposicionSeleccionada = value),
@@ -137,6 +156,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+                value: lugarSeleccionado,
                 decoration: const InputDecoration(labelText: 'Lugar'),
                 items: lugares.map((lugar) => DropdownMenuItem(value: lugar, child: Text(lugar))).toList(),
                 onChanged: (value) => setState(() => lugarSeleccionado = value),
@@ -144,6 +164,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<User>(
+                value: profesor1,
                 decoration: const InputDecoration(labelText: 'Profesor 1'),
                 items: profesoresDisponibles.map((profesor) {
                   return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
@@ -153,6 +174,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<User>(
+                value: profesor2,
                 decoration: const InputDecoration(labelText: 'Profesor 2'),
                 items: profesoresDisponibles.map((profesor) {
                   return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
@@ -174,7 +196,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
               ElevatedButton.icon(
                 onPressed: _guardarClase,
                 icon: const Icon(Icons.save),
-                label: const Text('Guardar clase'),
+                label: Text(esEdicion ? 'Actualizar clase' : 'Guardar clase'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFFC107),
                   foregroundColor: Colors.black,

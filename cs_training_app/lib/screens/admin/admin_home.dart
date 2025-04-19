@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../models/user.dart';
 import '../../routes/routes.dart';
 import '../../services/admin_services.dart';
+import '../../services/auth_service.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -74,13 +75,26 @@ class _AdminHomeState extends State<AdminHome> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'Panel de Administración',
+          'Administración',
           style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
         ),
         backgroundColor: amarillo,
         foregroundColor: negro,
         elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: () async {
+            await AuthService().logout();
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, '/login');
+            }
+          },
+          color: negro,
+        ),
       ),
+
+
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

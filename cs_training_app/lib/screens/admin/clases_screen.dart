@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../models/entrenamiento.dart';
 import '../../routes/routes.dart';
 import '../../services/entrenamiento_service.dart';
+import 'crear_clases_screen.dart';
 
 class ClasesScreen extends StatefulWidget {
   const ClasesScreen({super.key});
@@ -49,6 +49,12 @@ class _ClasesScreenState extends State<ClasesScreen> {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFFFC107),
+        leading: IconButton(
+          icon: const Icon(Icons.home, color: Colors.black),  // Icono de la casa en negro
+          onPressed: () {
+            Navigator.pushNamed(context, AppRoutes.adminHome);
+          },
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -73,9 +79,77 @@ class _ClasesScreenState extends State<ClasesScreen> {
                 'Fecha: ${entrenamiento.fecha}\nLugar: ${entrenamiento.lugar}',
                 style: GoogleFonts.poppins(),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Botón de eliminar
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Confirmar eliminación'),
+                          content: const Text(
+                              '¿Estás seguro de que deseas eliminar este entrenamiento?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(false),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red),
+                              child: const Text('Eliminar'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        try {
+                          await entrenamientoService
+                              .deleteTraining(entrenamiento.id ?? 0);
+                          _cargarEntrenamientos();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                Text('Entrenamiento eliminado')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(
+                            SnackBar(
+                                content:
+                                Text('Error al eliminar: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  // Botón de editar
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CrearClaseScreen(
+                            entrenamiento: entrenamiento,
+                          ),
+                        ),
+                      ).then((_) {
+                        _cargarEntrenamientos(); // Recargar entrenamientos
+                      });
+                    },
+                  ),
+                ],
+              ),
               onTap: () {
-                // Aquí podrías mostrar detalles o editar el entrenamiento
+                // Si quieres que también al tapear el ListTile pase algo más
               },
             ),
           );
