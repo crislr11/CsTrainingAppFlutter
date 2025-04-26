@@ -317,7 +317,9 @@ class _AdminHomeState extends State<AdminHome> {
         if (texto == 'Activar')
           Navigator.pushNamed(context, '/activar_usuarios');
         else if (texto == 'Clases')
-          Navigator.pushNamed(context, AppRoutes.clasesAdmin); // Se usa la ruta definida en AppRoutes
+          Navigator.pushNamed(context, AppRoutes.clasesAdmin);
+        else if (texto == 'Pagos')
+          Navigator.pushNamed(context, AppRoutes.pagoScreen);
       },
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.all(10),
