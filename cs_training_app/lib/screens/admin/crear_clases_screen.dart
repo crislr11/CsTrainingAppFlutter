@@ -68,7 +68,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
         }
       });
     } catch (e) {
-      // Ya no mostramos el SnackBar en caso de error
+      // Manejo de errores
     }
   }
 
@@ -127,7 +127,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
         await _entrenamientoService.updateTraining(nuevoEntrenamiento.id!, nuevoEntrenamiento);
       }
     } catch (e) {
-
+      // Manejo de errores
     }
 
     Navigator.pushNamed(context, AppRoutes.clasesAdmin);
@@ -138,8 +138,11 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
     final esEdicion = widget.entrenamiento != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(esEdicion ? 'Editar Clase' : 'Crear Clase'),
-        backgroundColor: const Color(0xFFFFC107),
+        title: Text(
+          esEdicion ? 'Editar Clase' : 'Crear Clase',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFFFFC107), // Amarillo
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -147,66 +150,181 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              DropdownButtonFormField<String>(
+              // Oposición Dropdown
+              _buildDropdownField<String>(
+                label: 'Oposición',
                 value: oposicionSeleccionada,
-                decoration: const InputDecoration(labelText: 'Oposición'),
-                items: oposiciones.map((op) => DropdownMenuItem(value: op, child: Text(op))).toList(),
+                items: oposiciones,
                 onChanged: (value) => setState(() => oposicionSeleccionada = value),
                 validator: (value) => value == null ? 'Selecciona una oposición' : null,
+                displayText: (item) => item.replaceAll('_', ' '), // Formato sin guion bajo
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
+
+              // Lugar Dropdown
+              _buildDropdownField<String>(
+                label: 'Lugar',
                 value: lugarSeleccionado,
-                decoration: const InputDecoration(labelText: 'Lugar'),
-                items: lugares.map((lugar) => DropdownMenuItem(value: lugar, child: Text(lugar))).toList(),
+                items: lugares,
                 onChanged: (value) => setState(() => lugarSeleccionado = value),
                 validator: (value) => value == null ? 'Selecciona un lugar' : null,
+                displayText: (lugar) {
+                  return lugar.replaceAll('_', ' ');  // Reemplaza _ por espacio si es necesario
+                },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<User>(
+
+              // Profesor 1 Dropdown
+              _buildProfesorDropdownField(
+                label: 'Profesor 1',
                 value: profesor1,
-                decoration: const InputDecoration(labelText: 'Profesor 1'),
-                items: profesoresDisponibles.map((profesor) {
-                  return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
-                }).toList(),
+                profesorExcluido: profesor2,
                 onChanged: (value) => setState(() => profesor1 = value),
                 validator: (value) => value == null ? 'Selecciona un profesor' : null,
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<User>(
+
+              // Profesor 2 Dropdown
+              _buildProfesorDropdownField(
+                label: 'Profesor 2',
                 value: profesor2,
-                decoration: const InputDecoration(labelText: 'Profesor 2'),
-                items: profesoresDisponibles.map((profesor) {
-                  return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
-                }).toList(),
+                profesorExcluido: profesor1,
                 onChanged: (value) => setState(() => profesor2 = value),
                 validator: (value) => value == null ? 'Selecciona un profesor' : null,
               ),
               const SizedBox(height: 16),
+
+              // Fecha Selección
               ListTile(
                 title: Text(
                   fechaSeleccionada == null
                       ? 'Seleccionar fecha y hora'
                       : DateFormat('yyyy-MM-dd – kk:mm').format(fechaSeleccionada!),
+                  style: GoogleFonts.poppins(fontSize: 16, color: Colors.black87),
                 ),
-                trailing: const Icon(Icons.calendar_today),
+                trailing: const Icon(Icons.calendar_today, color: Color(0xFFFFC107)),
                 onTap: _seleccionarFecha,
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _guardarClase,
-                icon: const Icon(Icons.save),
-                label: Text(esEdicion ? 'Actualizar clase' : 'Guardar clase'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFC107),
-                  foregroundColor: Colors.black,
-                  textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+
+              // Botón Guardar
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: _guardarClase,
+                  icon: const Icon(Icons.save),
+                  label: Text(
+                    esEdicion ? 'Actualizar clase' : 'Guardar clase',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC107), // Amarillo
+                    foregroundColor: Colors.black, // Negro
+                    textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Función para crear el DropdownField con validación de campos vacíos
+  Widget _buildDropdownField<T>({
+    required String label,
+    required T? value,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+    required String? Function(T?) validator,
+    required String Function(T) displayText,
+  }) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.8, // Reduce el tamaño
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 3,
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.poppins(color: Colors.black87),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+        ),
+        items: items.map((T item) {
+          return DropdownMenuItem<T>(
+            value: item,
+            child: Text(displayText(item), style: GoogleFonts.poppins(fontSize: 16, color: Colors.black87)),
+          );
+        }).toList(),
+        onChanged: onChanged,
+        validator: validator,
+      ),
+    );
+  }
+
+  Widget _buildProfesorDropdownField({
+    required String label,
+    required User? value,
+    required User? profesorExcluido,
+    required ValueChanged<User?> onChanged,
+    required String? Function(User?) validator,
+  }) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.8, // Reduce el tamaño
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 3,
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<User>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.poppins(color: Colors.black87),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.black26, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: const Color(0xFFFFC107), width: 2),
+          ),
+        ),
+        items: profesoresDisponibles
+            .where((profesor) => profesor != profesorExcluido)
+            .map((profesor) {
+          return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
+        }).toList(),
+        onChanged: onChanged,
+        validator: validator,
       ),
     );
   }

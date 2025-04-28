@@ -22,7 +22,6 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
 
   final List<String> oposiciones = [
     'todos',
-    'BOMBERO',
     'POLICIA_NACIONAL',
     'POLICIA_LOCAL',
     'SUBOFICIAL',

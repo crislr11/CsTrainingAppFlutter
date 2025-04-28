@@ -134,4 +134,26 @@ class EntrenamientoService {
       rethrow;
     }
   }
+
+  // Obtener entrenamientos filtrados por rango de fechas
+  Future<List<Entrenamiento>> getTrainingsByDateRange(DateTime inicio, DateTime fin) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/api/entrenamientos/filtrar-por-fechas?inicio=${inicio.toIso8601String()}&fin=${fin.toIso8601String()}',
+        ),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return data.map((entrenamiento) => Entrenamiento.fromJson(entrenamiento)).toList();
+      } else {
+        throw Exception('Error al obtener entrenamientos por rango de fechas: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
 }
