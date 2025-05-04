@@ -34,24 +34,24 @@ class _LoginScreenState extends State<LoginScreen> {
         // Procesar la respuesta y crear el objeto User
         User user = User.fromAuthResponse(AuthResponse.fromJson(response));
 
-        print("Usuario después de parsear: ${user.nombreUsuario}, ${user.oposicion}, ${user.role}, ${user.id}");  // Imprimir los valores del usuario
+
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', response['token']);
-
-        // Ver los valores antes de guardarlos en SharedPreferences
-        print("Guardando en SharedPreferences:");
-        print("Token: ${response['token']}");
-        print("Nombre Usuario: ${user.nombreUsuario}");
-        print("Oposición: ${user.oposicion}");
-        print("Rol: ${user.role}");
-
+        await prefs.setInt('userId', user.id);
+        await prefs.setString('nombre', user.nombre);
         await prefs.setString('nombreUsuario', user.nombreUsuario);
         await prefs.setString('oposicion', user.oposicion);
         await prefs.setString('role', user.role);
+        await prefs.setBool('active', user.active);
+        await prefs.setInt('creditos', user.creditos);
+        await prefs.setBool('pagado', user.pagado);
+
 
         if (user.role == "ADMIN") {
           Navigator.pushReplacementNamed(context, '/admin_home');
+        }else if (user.role == "PROFESOR"){
+          Navigator.pushReplacementNamed(context, '/profesor_home');
         } else {
           Navigator.pushReplacementNamed(context, '/registro');
         }

@@ -38,21 +38,26 @@ class EntrenamientoService {
     }
   }
 
-  // Obtener entrenamientos de un profesor
-  Future<List<Entrenamiento>> getTrainingsByProfessor(int profesorId) async {
+  Future<List<Entrenamiento>> getFutureTrainingsByProfessor(int profesorId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/entrenamientos/profesor/$profesorId'), headers: await _getHeaders(),);
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/entrenamientos/profesor/$profesorId/futuros'),
+        headers: await _getHeaders(),
+      );
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         return data.map((entrenamiento) => Entrenamiento.fromJson(entrenamiento)).toList();
+      } else if (response.statusCode == 403) {
+        throw Exception('Acceso denegado: No tienes permisos para realizar esta acción');
       } else {
-        throw Exception('Error al obtener los entrenamientos del profesor: ${response.statusCode}');
+        throw Exception('Error al obtener los entrenamientos futuros: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;
     }
   }
+
 
   // Obtener entrenamientos por oposición
   Future<List<Entrenamiento>> getTrainingsByOpposition(String oposicion) async {
