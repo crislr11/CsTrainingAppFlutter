@@ -60,10 +60,12 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
         if (entrenamiento != null) {
           oposicionSeleccionada = entrenamiento.oposicion;
           lugarSeleccionado = entrenamiento.lugar;
-          fechaSeleccionada = DateTime.parse(entrenamiento.fecha);
+          fechaSeleccionada = entrenamiento.fecha;
           if (entrenamiento.profesores.length >= 2) {
             profesor1 = profesoresDisponibles.firstWhere((p) => p.id == entrenamiento.profesores[0].id);
+            print(profesor1);
             profesor2 = profesoresDisponibles.firstWhere((p) => p.id == entrenamiento.profesores[1].id);
+            print(profesor2);
           }
         }
       });
@@ -102,36 +104,67 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
 
   Future<void> _guardarClase() async {
     if (!_formKey.currentState!.validate()) {
-      return; // Ya no mostramos el SnackBar de fallo
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, completa todos los campos obligatorios.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     if (profesor1 == null || profesor2 == null || fechaSeleccionada == null) {
-      return; // Ya no mostramos el SnackBar de fallo
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes seleccionar dos profesores y una fecha.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     final nuevoEntrenamiento = Entrenamiento(
       id: widget.entrenamiento?.id,
       oposicion: oposicionSeleccionada!,
-      profesores: [profesor1!, profesor2!],
-      alumnos: widget.entrenamiento?.alumnos ?? [],
-      fecha: fechaSeleccionada!.toIso8601String(),  // Guardar la fecha en formato ISO 8601
+      // Envía los objetos completos de los profesores y alumnos
+      profesores: [profesor1!, profesor2!], // Aquí se pasan los objetos User completos
+      alumnos: widget.entrenamiento?.alumnos ?? [],  // Si hay alumnos en la edición, los utilizamos, si no, enviamos una lista vacía
+      fecha: fechaSeleccionada!,
       lugar: lugarSeleccionado!,
     );
 
     try {
       if (widget.entrenamiento == null) {
-        // Si es una creación
         await _entrenamientoService.createTraining(nuevoEntrenamiento);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Clase creada correctamente.'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
-        // Si es una actualización
         await _entrenamientoService.updateTraining(nuevoEntrenamiento.id!, nuevoEntrenamiento);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Clase actualizada correctamente.'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-    } catch (e) {
-      // Manejo de errores
-    }
 
-    Navigator.pushNamed(context, AppRoutes.clasesAdmin);
+      Navigator.pushNamed(context, AppRoutes.clasesAdmin);
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ocurrió un error al guardar la clase.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +214,7 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
                 profesorExcluido: profesor2,
                 onChanged: (value) => setState(() => profesor1 = value),
                 validator: (value) => value == null ? 'Selecciona un profesor' : null,
+
               ),
               const SizedBox(height: 16),
 
@@ -323,7 +357,12 @@ class _CrearClaseScreenState extends State<CrearClaseScreen> {
             .map((profesor) {
           return DropdownMenuItem(value: profesor, child: Text(profesor.nombreUsuario));
         }).toList(),
-        onChanged: onChanged,
+        onChanged: (value) {
+          onChanged(value);
+          if (value != null) {
+            print('$label seleccionado: ${value.nombreUsuario} (ID: ${value.id})');
+          }
+        },
         validator: validator,
       ),
     );

@@ -1,11 +1,13 @@
-import 'package:cs_training_app/screens/admin/activar_usuarios.dart';
-import 'package:cs_training_app/screens/admin/clases_screen.dart';
+
 import 'package:cs_training_app/screens/admin/pagos_screen.dart';
 import 'package:cs_training_app/screens/auth/register_screen.dart';
 import 'package:cs_training_app/screens/auth/login_screen.dart';
 import 'package:flutter/material.dart';
+import '../screens/admin/activar_usuarios.dart';
 import '../screens/admin/admin_home.dart';
+import '../screens/admin/clases_screen.dart';
 import '../screens/admin/crear_clases_screen.dart';
+import '../screens/profesor/crear_simulacro_screen.dart';
 import '../screens/profesor/profesor_home_screen.dart';
 
 class AppRoutes {
@@ -18,6 +20,8 @@ class AppRoutes {
   static const String crearClase = '/crear_clase';
   static const String pagoScreen = '/pago_screen';
   static const String profesorHome = '/profesor_home';
+  static const String crearSimulacro = '/crear_simulacro';
+
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -37,6 +41,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => PagosScreen());
       case profesorHome:
         return MaterialPageRoute(builder: (_) => const ProfesorHomeScreen());
+      case crearSimulacro:
+        return MaterialPageRoute(builder: (_) => CrearSimulacroScreen());
       default:
         return MaterialPageRoute(builder: (_) => LoginScreen());
     }

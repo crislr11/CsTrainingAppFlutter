@@ -1,3 +1,7 @@
+
+
+import 'package:cs_training_app/models/simulacro/simulacro.dart';
+
 class AuthResponse {
   final String token;
   final String nombre;
@@ -7,6 +11,7 @@ class AuthResponse {
   final int id;
   final int creditos;
   final bool pagado;
+  final List<Simulacro> simulacros;
 
   AuthResponse({
     required this.token,
@@ -16,7 +21,8 @@ class AuthResponse {
     required this.role,
     required this.id,
     required this.creditos,
-    required this.pagado
+    required this.pagado,
+    required this.simulacros,
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -28,12 +34,14 @@ class AuthResponse {
       role: json['role'] ?? "Usuario",
       id: json['id'] ?? 0,
       creditos: json['creditos'] ?? 0,
-      pagado: json['pagado']
+      pagado: json['pagado'],
+      simulacros: (json['simulacros'] as List<dynamic>?)
+          ?.map((e) => Simulacro.fromJson(e))
+          .toList() ??
+          [],
     );
   }
 
-
-  // Método para convertir el objeto a un JSON
   Map<String, dynamic> toJson() {
     return {
       'token': token,
@@ -42,8 +50,9 @@ class AuthResponse {
       'oposicion': oposicion,
       'role': role,
       'id': id,
-      'creditos':creditos,
-      'pagado':pagado
+      'creditos': creditos,
+      'pagado': pagado,
+      'simulacros': simulacros.map((s) => s.toJson()).toList(),
     };
   }
 }

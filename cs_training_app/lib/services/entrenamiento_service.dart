@@ -92,18 +92,20 @@ class EntrenamientoService {
 
   // Crear entrenamiento
   Future<Entrenamiento> createTraining(Entrenamiento entrenamiento) async {
+    print('Nuevo Entrenamiento: ${entrenamiento.toJson()}');
     try {
+      print(entrenamiento.toString());
       final response = await http.post(
         Uri.parse('$baseUrl/api/entrenamientos'),
           headers: await _getHeaders(),
         body: json.encode(entrenamiento.toJson()),
       );
-
       if (response.statusCode == 201) {
         return Entrenamiento.fromJson(json.decode(response.body));
       } else {
         throw Exception('Error al crear el entrenamiento: ${response.statusCode}');
       }
+
     } catch (e) {
       rethrow;
     }

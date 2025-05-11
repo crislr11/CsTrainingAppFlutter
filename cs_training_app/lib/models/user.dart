@@ -1,3 +1,4 @@
+import 'package:cs_training_app/models/simulacro/simulacro.dart';
 import 'auth_response.dart';
 
 class User {
@@ -8,7 +9,9 @@ class User {
   final String role;
   final bool active;
   final int creditos;
-  final bool pagado;
+  bool pagado; // Puede cambiar a bool? si deseas permitir valores null
+  final List<Simulacro> simulacros;
+
   User({
     required this.id,
     required this.nombre,
@@ -17,35 +20,40 @@ class User {
     required this.role,
     required this.active,
     required this.creditos,
-    required this.pagado
+    required this.pagado,
+    required this.simulacros,
   });
 
   factory User.fromAuthResponse(AuthResponse authResponse) {
     return User(
       id: authResponse.id,
-      nombre: authResponse.nombre ?? "Desconocido",  // Aseguramos que nunca sea nulo
-      nombreUsuario: authResponse.nombreUsuario ?? "Desconocido",  // Aseguramos que nunca sea nulo
-      oposicion: authResponse.oposicion ?? "NINGUNA",  // Si es nulo, asignamos "NINGUNA"
-      role: authResponse.role ?? "Usuario",  // Si es nulo, asignamos "Usuario"
-      active: true, // Definimos el valor por defecto como `true`
-      creditos: authResponse.creditos ?? 0,
-      pagado: authResponse.pagado
+      nombre: authResponse.nombre,
+      nombreUsuario: authResponse.nombreUsuario,
+      oposicion: authResponse.oposicion,
+      role: authResponse.role,
+      active: true, // Asumo que siempre es true, pero puedes ajustarlo
+      creditos: authResponse.creditos,
+      pagado: authResponse.pagado ?? false, // Si `pagado` es null, se asigna false
+      simulacros: authResponse.simulacros,
     );
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? 0,  // Si es nulo, asignamos 0
-      nombre: json['nombre'] ?? "Desconocido",  // Aseguramos que nunca sea nulo
-      nombreUsuario: json['nombreUsuario'] ?? "Desconocido",  // Aseguramos que nunca sea nulo
-      oposicion: json['oposicion'] ?? "NINGUNA",  // Si es nulo, asignamos "NINGUNA"
-      role: json['role'] ?? "Usuario",  // Si es nulo, asignamos "Usuario"
-      active: json['active'] ?? false,  // Si es nulo, asignamos `false`
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? "Desconocido",
+      nombreUsuario: json['nombreUsuario'] ?? "Desconocido",
+      oposicion: json['oposicion'] ?? "NINGUNA",
+      role: json['role'] ?? "Usuario",
+      active: json['active'] ?? false, // Se asigna false si es null
       creditos: json['creditos'] ?? 0,
-      pagado: json['pagado']
+      pagado: json['pagado'] ?? false, // Si `pagado` es null, se asigna false
+      simulacros: (json['simulacros'] as List<dynamic>?)
+          ?.map((e) => Simulacro.fromJson(e))
+          .toList() ??
+          [],
     );
   }
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -55,7 +63,15 @@ class User {
       'oposicion': oposicion,
       'role': role,
       'active': active,
-      'creditos':creditos
+      'creditos': creditos,
+      'pagado': pagado,
+      'simulacros': simulacros.map((s) => s.toJson()).toList(),
+    };
+  }
+
+  Map<String, dynamic> toMinimalJson() {
+    return {
+      'id': id,
     };
   }
 }

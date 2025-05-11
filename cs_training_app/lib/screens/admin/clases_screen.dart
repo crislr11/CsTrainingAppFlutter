@@ -59,7 +59,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
         if (inicio != null && fin != null) {
           // Luego filtramos manualmente por fechas (localmente)
           resultado = resultado.where((entrenamiento) {
-            DateTime fechaEntrenamiento = DateTime.parse(entrenamiento.fecha);
+            DateTime fechaEntrenamiento = entrenamiento.fecha;
             return fechaEntrenamiento.isAfter(inicio.subtract(const Duration(days: 1))) &&
                 fechaEntrenamiento.isBefore(fin.add(const Duration(days: 1)));
           }).toList();
@@ -71,6 +71,13 @@ class _ClasesScreenState extends State<ClasesScreen> {
         // Si no hay nada filtrado
         resultado = await entrenamientoService.getAllTrainings();
       }
+
+      // Ordenar los entrenamientos de mayor a menor fecha
+      resultado.sort((a, b) {
+        DateTime fechaA = a.fecha;
+        DateTime fechaB = b.fecha;
+        return fechaB.compareTo(fechaA); // De mayor a menor
+      });
 
       setState(() {
         entrenamientos = resultado;
@@ -85,7 +92,6 @@ class _ClasesScreenState extends State<ClasesScreen> {
       });
     }
   }
-
 
   Future<void> _seleccionarFechaInicio() async {
     final picked = await showDatePicker(
@@ -290,7 +296,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
               itemCount: entrenamientos.length,
               itemBuilder: (context, index) {
                 final entrenamiento = entrenamientos[index];
-                DateTime fechaEntrenamiento = DateTime.parse(entrenamiento.fecha);
+                DateTime fechaEntrenamiento = entrenamiento.fecha;
                 String formattedTime = "${fechaEntrenamiento.hour.toString().padLeft(2, '0')}:${fechaEntrenamiento.minute.toString().padLeft(2, '0')}";
 
                 return Card(
@@ -300,7 +306,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   child: ListTile(
                     title: Text(
-                      _formatearOposicion(entrenamiento.oposicion), // Muestra la oposición con espacio
+                      _formatearOposicion(entrenamiento.oposicion),
                       style: GoogleFonts.rubik(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Column(

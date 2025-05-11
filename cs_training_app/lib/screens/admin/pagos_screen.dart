@@ -34,9 +34,7 @@ class _PagosScreenState extends State<PagosScreen> {
       final users = await AdminService().getAllUsers();
       setState(() {
         _users.clear();
-        _users.addAll(
-            users.where((user) => user.role == 'OPOSITOR')
-        );
+        _users.addAll(users.where((user) => user.role == 'OPOSITOR'));
         _filterUsers();
       });
     } catch (e) {
@@ -67,6 +65,9 @@ class _PagosScreenState extends State<PagosScreen> {
       setState(() {
         _pagos.clear();
         _pagos.addAll(pagos);
+
+        // Ordenar los pagos por fecha (de mayor a menor)
+        _pagos.sort((a, b) => b.fechaPago.compareTo(a.fechaPago)); // Ordenar de mayor a menor
       });
     } catch (e) {
       _showError('Error al cargar pagos: $e');
@@ -75,12 +76,24 @@ class _PagosScreenState extends State<PagosScreen> {
     }
   }
 
+  // Método para crear un pago y actualizar el estado de "pagado" de un usuario
   Future<void> _crearPago() async {
     if (_selectedUserId == null) return;
 
     setState(() => _isLoading = true);
     try {
+      // Creando el pago
       await PagoService().crearPago(_selectedUserId!);
+      
+      // Actualizando el estado del usuario
+      setState(() {
+        final userIndex = _users.indexWhere((user) => user.id == _selectedUserId);
+        if (userIndex != -1) {
+          _users[userIndex].pagado = true; // Cambiar a verde (pagado)
+        }
+      });
+
+      // Recargar los pagos del usuario seleccionado
       await _loadPagos(_selectedUserId!);
       _showSuccess('Pago creado exitosamente');
     } catch (e) {
@@ -130,7 +143,7 @@ class _PagosScreenState extends State<PagosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Pagos'),
-        backgroundColor:  const Color(0xFFFFC107),
+        backgroundColor: const Color(0xFFFFC107),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -142,15 +155,31 @@ class _PagosScreenState extends State<PagosScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Buscar usuario',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor:  const Color(0xFFFFC107),
-              ),
+            child: Autocomplete<User>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                final query = textEditingValue.text.toLowerCase();
+                return _filteredUsers.where((user) => user.nombreUsuario.toLowerCase().contains(query)).toList();
+              },
+              displayStringForOption: (User user) => user.nombreUsuario,
+              onSelected: (User selectedUser) {
+                setState(() {
+                  _searchController.text = selectedUser.nombreUsuario;
+                  _loadPagos(selectedUser.id);
+                });
+              },
+              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  onSubmitted: (_) => onFieldSubmitted(),
+                  decoration: InputDecoration(
+                    labelText: 'Buscar usuario',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+
+                  ),
+                );
+              },
             ),
           ),
           Expanded(
@@ -167,7 +196,7 @@ class _PagosScreenState extends State<PagosScreen> {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  color: user.pagado ? Colors.green : Colors.red,
+                  color: user.pagado ? Colors.green : Colors.red, // Cambiar color de fondo según si está pagado
                   child: InkWell(
                     onTap: () => _loadPagos(user.id),
                     child: Padding(
@@ -297,8 +326,6 @@ class _PagosScreenState extends State<PagosScreen> {
         ),
       )
           : null,
-
-
     );
   }
 }

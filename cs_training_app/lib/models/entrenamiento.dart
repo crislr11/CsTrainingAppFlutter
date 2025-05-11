@@ -5,11 +5,11 @@ class Entrenamiento {
   final String oposicion;
   final List<User> profesores;
   final List<User> alumnos;
-  final String fecha;
+  final DateTime fecha;
   final String lugar;
 
   Entrenamiento({
-    required this.id,
+    this.id,
     required this.oposicion,
     required this.profesores,
     required this.alumnos,
@@ -17,28 +17,30 @@ class Entrenamiento {
     required this.lugar,
   });
 
-  // Convertir JSON a objeto Entrenamiento
   factory Entrenamiento.fromJson(Map<String, dynamic> json) {
     return Entrenamiento(
       id: json['id'],
       oposicion: json['oposicion'],
-      profesores: List<User>.from(json['profesores'].map((x) => User.fromJson(x))),
-      alumnos: List<User>.from(json['alumnos'].map((x) => User.fromJson(x))),
-      fecha: json['fecha'],
+      profesores: List<User>.from(json['profesores']?.map((x) => User.fromJson(x)) ?? []),
+      alumnos: List<User>.from(json['alumnos']?.map((x) => User.fromJson(x)) ?? []),
+      fecha: DateTime.parse(json['fecha']),
       lugar: json['lugar'],
     );
   }
 
-
-  // Convertir el objeto Entrenamiento a JSON para enviarlo a la API
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'oposicion': oposicion,
-      'profesores': profesores.map((x) => x.toJson()).toList(), // Convertir cada User a un Map
-      'alumnos': alumnos.map((x) => x.toJson()).toList(), // Convertir cada User a un Map
-      'fecha': fecha,
+      'profesores': profesores.map((x) => x.toJson()).toList(),
+      'alumnos': alumnos.map((x) => x.toJson()).toList(),
+      'fecha': fecha.toIso8601String(),
       'lugar': lugar,
     };
+  }
+
+  @override
+  String toString() {
+    return 'Entrenamiento{id: $id, oposicion: $oposicion, fecha: $fecha, lugar: $lugar}';
   }
 }
