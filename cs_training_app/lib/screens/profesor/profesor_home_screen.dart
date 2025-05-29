@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cs_training_app/models/entrenamiento.dart';
 import 'package:cs_training_app/services/entrenamiento_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cs_training_app/models/user.dart';
 import '../../routes/routes.dart';
+import 'package:intl/intl.dart';
+
 
 class ProfesorHomeScreen extends StatefulWidget {
   const ProfesorHomeScreen({super.key});
@@ -18,6 +21,7 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
   String _nombreUsuario = '';
   String _oposicion = '';
 
+
   @override
   void initState() {
     super.initState();
@@ -30,12 +34,51 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
     setState(() {
       _nombreProfesor = prefs.getString('nombre') ?? 'Profesor';
       _nombreUsuario = prefs.getString('nombreUsuario') ?? '';
+
     });
   }
 
+  void _mostrarAlumnosDialog(BuildContext context, List<User> alumnos) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (_) {
+        if (alumnos.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No hay alumnos apuntados.'),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Alumnos apuntados',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ...alumnos.map((alumno) => ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(alumno.nombreUsuario),
+                subtitle: Text(alumno.nombre),
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
   void _cargarEntrenamientos() async {
     final prefs = await SharedPreferences.getInstance();
-    final profesorId = prefs.getInt('userId');
+    final profesorId = prefs.getInt('id');
 
     if (profesorId == null) {
       setState(() {
@@ -168,11 +211,15 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
                     itemCount: entrenamientos.length,
                     itemBuilder: (context, index) {
                       final entrenamiento = entrenamientos[index];
-                      final fechaFormateada = entrenamiento.fecha;
+                      final fechaHoraFormateada =
+                      DateFormat('d MMM y · HH:mm', 'es_ES').format(entrenamiento.fecha);
 
                       return Card(
-                        margin: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 3,
                         child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           title: Text(
                             entrenamiento.oposicion.replaceAll('_', ' '),
                             style: const TextStyle(
@@ -180,29 +227,42 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
                               color: Colors.black,
                             ),
                           ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Fecha: $fechaFormateada', style: const TextStyle(color: Colors.black)),
-                              Text('Lugar: ${entrenamiento.lugar}', style: const TextStyle(color: Colors.black)),
-                              if (entrenamiento.alumnos.isNotEmpty)
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  'Alumnos: ${entrenamiento.alumnos.length}',
-                                  style: const TextStyle(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.black,
-                                  ),
+                                  '📅 Fecha: $fechaHoraFormateada',
+                                  style: const TextStyle(color: Colors.black),
                                 ),
-                            ],
+                                Text(
+                                  '📍 Lugar: ${entrenamiento.lugar}',
+                                  style: const TextStyle(color: Colors.black),
+                                ),
+                                if (entrenamiento.alumnos.isNotEmpty)
+                                  Text(
+                                    '👥 Alumnos: ${entrenamiento.alumnos.length}',
+                                    style: const TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                           trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black),
                           onTap: () {
-                            // Acción al pulsar el entrenamiento (opcional)
+                            // Acción al pulsar el entrenamiento
+                          },
+                          onLongPress: () {
+                            _mostrarAlumnosDialog(context, entrenamiento.alumnos);
                           },
                         ),
                       );
                     },
                   );
+
                 }
               },
             ),
@@ -215,7 +275,7 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
   String _formatearFecha(String fecha) {
     try {
       final dateTime = DateTime.parse(fecha);
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(0, '0')}';
     } catch (_) {
       return fecha;
     }

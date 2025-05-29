@@ -17,6 +17,9 @@ class _PagosScreenState extends State<PagosScreen> {
   bool _isLoading = false;
   int? _selectedUserId;
 
+  // Nuevo estado para filtro: null = todos, true = pagados, false = no pagados
+  bool? _filterPagado;
+
   // Variables de color
   final Color primaryColor = Colors.amber;
   final Color backgroundColor = Colors.black;
@@ -35,7 +38,7 @@ class _PagosScreenState extends State<PagosScreen> {
       setState(() {
         _users.clear();
         _users.addAll(users.where((user) => user.role == 'OPOSITOR'));
-        _filterUsers();
+        _applyFilters();
       });
     } catch (e) {
       _showError('Error al cargar usuarios: $e');
@@ -45,14 +48,28 @@ class _PagosScreenState extends State<PagosScreen> {
   }
 
   void _filterUsers() {
+    _applyFilters();
+  }
+
+  void _applyFilters() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredUsers.clear();
       _filteredUsers.addAll(
-        _users.where((user) =>
-            user.nombreUsuario.toLowerCase().contains(query)),
+        _users.where((user) {
+          final matchesSearch = user.nombreUsuario.toLowerCase().contains(query);
+          final matchesFilter = _filterPagado == null || user.pagado == _filterPagado;
+          return matchesSearch && matchesFilter;
+        }),
       );
     });
+  }
+
+  void _setFilter(bool? pagado) {
+    setState(() {
+      _filterPagado = pagado;
+    });
+    _applyFilters();
   }
 
   Future<void> _loadPagos(int userId) async {
@@ -176,12 +193,61 @@ class _PagosScreenState extends State<PagosScreen> {
                     labelText: 'Buscar usuario',
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(),
-
                   ),
                 );
               },
             ),
           ),
+
+          // Aquí añadimos los botones de filtro:
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _setFilter(true),
+                    icon: const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                    label: const Text(
+                      'Pagados',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _filterPagado == true
+                          ? Colors.green
+                          : Colors.green.withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                      elevation: _filterPagado == true ? 6 : 2,
+                      shadowColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _setFilter(false),
+                    icon: const Icon(Icons.cancel, color: Colors.white, size: 18),
+                    label: const Text(
+                      'No Pagados',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _filterPagado == false
+                          ? Colors.red
+                          : Colors.red.withOpacity(0.5),
+                      foregroundColor: Colors.white,
+                      elevation: _filterPagado == false ? 6 : 2,
+                      shadowColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+
           Expanded(
             child: _isLoading && _filteredUsers.isEmpty
                 ? Center(child: CircularProgressIndicator())
@@ -192,11 +258,8 @@ class _PagosScreenState extends State<PagosScreen> {
               itemBuilder: (context, index) {
                 final user = _filteredUsers[index];
                 return Card(
-                  margin: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  color: user.pagado ? Colors.green : Colors.red, // Cambiar color de fondo según si está pagado
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: user.pagado ? Colors.green : Colors.red,
                   child: InkWell(
                     onTap: () => _loadPagos(user.id),
                     child: Padding(
@@ -207,9 +270,7 @@ class _PagosScreenState extends State<PagosScreen> {
                             backgroundColor: primaryColor,
                             child: Text(
                               user.nombreUsuario[0],
-                              style: TextStyle(
-                                color: backgroundColor,
-                              ),
+                              style: TextStyle(color: backgroundColor),
                             ),
                           ),
                           SizedBox(width: 16),
@@ -227,9 +288,7 @@ class _PagosScreenState extends State<PagosScreen> {
                                 ),
                                 Text(
                                   user.role,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                  ),
+                                  style: TextStyle(color: Colors.white),
                                 ),
                               ],
                             ),
@@ -245,6 +304,8 @@ class _PagosScreenState extends State<PagosScreen> {
           ),
         ],
       ),
+
+      // ... El resto sin cambios ...
       bottomNavigationBar: _selectedUserId != null
           ? Container(
         height: 300,

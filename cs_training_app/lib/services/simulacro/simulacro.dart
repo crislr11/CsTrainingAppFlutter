@@ -7,7 +7,7 @@ import '../../models/simulacro/simulacro.dart';
 
 
 class SimulacroService {
-  final String baseUrl = 'http://localhost:8080/api/simulacro';
+  final String baseUrl = 'http://35.180.5.103:8080/api/simulacro';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

@@ -7,7 +7,7 @@ import '../../models/simulacro/ejercicio_marca.dart';
 
 
 class EjercicioMarcaService {
-  final String baseUrl = 'http://localhost:8080/api/ejercicio-marca';
+  final String baseUrl = 'http://35.180.5.103:8080/api/ejercicio-marca';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

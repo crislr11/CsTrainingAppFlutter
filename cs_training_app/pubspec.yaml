@@ -33,7 +33,6 @@ dependencies:
 
   provider:
   http:
-  flutter_secure_storage:
   shared_preferences:
   flutter_localizations:
     sdk: flutter
@@ -42,7 +41,10 @@ dependencies:
   flutter_typeahead:
   fl_chart: ^0.70.2
   google_fonts: ^6.2.1
-
+  image_picker: ^1.1.2
+  flutter_secure_storage: ^8.0.0
+  path_provider: ^2.1.5
+  intl: ^0.19.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

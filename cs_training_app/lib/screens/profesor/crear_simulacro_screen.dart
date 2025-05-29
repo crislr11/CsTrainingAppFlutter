@@ -37,11 +37,20 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
   bool _estaCreandoSimulacro = false;
   bool _estaAgregandoEjercicio = false;
 
+  final TextEditingController _marcaController = TextEditingController();
+
+
   @override
   void initState() {
     super.initState();
     _loadUsers();
     _loadEjercicios();
+  }
+
+  @override
+  void dispose() {
+    _marcaController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUsers() async {
@@ -61,7 +70,6 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
       setState(() {
         _ejercicios = ejercicios;
       });
-      print(ejercicios);
     } catch (error) {
       _showErrorDialog("Hubo un error al cargar los ejercicios: $error");
     }
@@ -226,78 +234,108 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
     );
   }
 
+
   void _mostrarDialogoAgregarEjercicios() {
-    _ejercicioSeleccionado = null;
-    _marca = 0;
+    // Resetear los campos al abrir el diálogo
+    setState(() {
+      _ejercicioSeleccionado = null;
+      _marca = 0;
+      _marcaController.clear();
+    });
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Añadir Ejercicio al Simulacro"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<Ejercicio>(
-              value: _ejercicioSeleccionado,
-              onChanged: (newValue) {
-                setState(() {
-                  _ejercicioSeleccionado = newValue;
-                });
-              },
-              decoration: InputDecoration(
-                labelText: 'Ejercicio',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: const Color(0xFFFFF8E1),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Añadir Ejercicio al Simulacro"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<Ejercicio>(
+                  value: _ejercicioSeleccionado,
+                  onChanged: (newValue) {
+                    setDialogState(() {
+                      _ejercicioSeleccionado = newValue;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Ejercicio',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: const Color(0xFFFFF8E1),
+                  ),
+                  items: _ejercicios.map((ejercicio) {
+                    return DropdownMenuItem<Ejercicio>(
+                      value: ejercicio,
+                      child: Text(ejercicio.nombre ?? 'Sin nombre'),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _marcaController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Marca',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: const Color(0xFFFFF8E1),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      _marca = double.tryParse(value) ?? 0;
+                    });
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Simulacro creado correctamente')),
+                  );
+                },
+                child: const Text("Finalizar"),
               ),
-              items: _ejercicios.map((ejercicio) {
-                return DropdownMenuItem<Ejercicio>(
-                  value: ejercicio,
-                  child: Text(ejercicio.nombre ?? 'Sin nombre'),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Marca',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: const Color(0xFFFFF8E1),
+              ElevatedButton(
+                onPressed: () async {
+                  setDialogState(() {
+                    _estaAgregandoEjercicio = true;
+                  });
+
+                  await _agregarEjercicioASimulacro(); // Si esta función no es async, quítale el await
+
+                  // Limpiar campos después de añadir
+                  setDialogState(() {
+                    _ejercicioSeleccionado = null;
+                    _marca = 0;
+                    _marcaController.clear();
+                    _estaAgregandoEjercicio = false; // ¡Importante!
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFC107),
+                  foregroundColor: Colors.black,
+                ),
+                child: _estaAgregandoEjercicio
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                )
+                    : const Text("Añadir Ejercicio"),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _marca = double.tryParse(value) ?? 0;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Simulacro creado correctamente')),
-              );
-            },
-            child: const Text("Finalizar"),
-          ),
-          ElevatedButton(
-            onPressed: _agregarEjercicioASimulacro,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFC107),
-              foregroundColor: Colors.black,
-            ),
-            child: _estaAgregandoEjercicio
-                ? const CircularProgressIndicator(color: Colors.black)
-                : const Text("Añadir Ejercicio"),
-          ),
-        ],
+
+            ],
+          );
+        },
       ),
     );
   }
+
 
   Ejercicio obtenerEjercicioPorId(int idEjercicio) {
     // Buscar el ejercicio en la lista _ejercicios por su id
@@ -305,7 +343,7 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
           (ejercicio) => ejercicio.id == idEjercicio,
       orElse: () => Ejercicio(id: 0, nombre: 'Ejercicio no encontrado', marca: 0),
     );
-    print("holaaaaaaaaaaa $ejercicio");
+
     return ejercicio;
   }
 
@@ -481,11 +519,6 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
                         itemCount: _simulacrosUsuario.length,
                         itemBuilder: (context, index) {
                           final simulacro = _simulacrosUsuario[index];
-                          // Añadir este print para inspeccionar los datos del simulacro y sus ejercicios
-                          print('Simulacro ID: ${simulacro.id}, Título: ${simulacro.titulo}');
-                          for (var ejercicio in simulacro.ejercicios) {
-                            print('  Ejercicio ID: ${ejercicio.id}, Nombre: ${ejercicio.nombre}, Marca: ${ejercicio.marca}');
-                          }
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12.0),
                             child: ExpansionTile(

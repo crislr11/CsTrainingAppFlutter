@@ -38,9 +38,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', response['token']);
-        await prefs.setInt('userId', user.id);
+        await prefs.setInt('id', response['id']);
+        print('ID guardado: ${response['id']}');
         await prefs.setString('nombre', user.nombre);
         await prefs.setString('nombreUsuario', user.nombreUsuario);
+        await prefs.setString('email', response['email'] ?? 'Sin email'); // Solo si viene en el response
         await prefs.setString('oposicion', user.oposicion);
         await prefs.setString('role', user.role);
         await prefs.setBool('active', user.active);
@@ -50,11 +52,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (user.role == "ADMIN") {
           Navigator.pushReplacementNamed(context, '/admin_home');
-        }else if (user.role == "PROFESOR"){
+        } else if (user.role == "PROFESOR") {
           Navigator.pushReplacementNamed(context, '/profesor_home');
+        } else if (user.role == "OPOSITOR") {
+          Navigator.pushReplacementNamed(context,'/opositor_profile',);
         } else {
-          Navigator.pushReplacementNamed(context, '/registro');
+          _showErrorDialog("Rol de usuario desconocido: ${user.role}");
         }
+
       } else {
         _showErrorDialog("No se pudo iniciar sesión. Verifica tus credenciales.");
       }

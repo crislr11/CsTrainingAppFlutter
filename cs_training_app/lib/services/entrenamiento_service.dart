@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/entrenamiento.dart';
 
-// Definir la URL base en un archivo de constantes
-const String baseUrl = "http://localhost:8080";
+
+const String baseUrl = "http://35.180.5.103:8080";
 
 // Obtiene el token de autenticación desde SharedPreferences
 Future<String?> _getToken() async {

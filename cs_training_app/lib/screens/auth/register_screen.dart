@@ -69,16 +69,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Título "REGISTRO" en el cuadro
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        "REGISTRO",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                      child: Center(
+                        child: Text(
+                          "REGISTRO",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
+
                     Form(
                       key: _formKey,
                       child: Column(
@@ -174,7 +177,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           SizedBox(height: 10),
 
-                          // Dropdown para la oposición (solo si el rol es OPOSITOR)
                           if (_role == 'OPOSITOR')
                             SizedBox(
                               width: double.infinity,
@@ -186,8 +188,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                                  prefixIcon: Icon(Icons.security, color: Colors.black),
+                                  contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12), // menos padding
+                                  prefixIcon: Icon(Icons.security, color: Colors.black, size: 18), // icono más pequeño
                                 ),
                                 onChanged: (newValue) {
                                   setState(() {
@@ -197,12 +199,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 items: _oposiciones.map((oposicion) {
                                   return DropdownMenuItem<String>(
                                     value: oposicion,
-                                    child: Text(oposicion.replaceAll('_', ' ')), // Reemplaza _ por espacio
+                                    child: Text(
+                                      oposicion.replaceAll('_', ' '),
+                                      style: TextStyle(fontSize: 10), // texto un poco más pequeño
+                                    ),
                                   );
                                 }).toList(),
                               ),
                             ),
+
                           SizedBox(height: 20),
+
 
                           // Botón de registro
                           ElevatedButton(

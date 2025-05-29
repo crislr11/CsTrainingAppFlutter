@@ -5,6 +5,7 @@ class User {
   final int id;
   final String nombre;
   final String nombreUsuario;
+  final String email;          // <-- Nuevo campo email
   final String oposicion;
   final String role;
   final bool active;
@@ -16,6 +17,7 @@ class User {
     required this.id,
     required this.nombre,
     required this.nombreUsuario,
+    required this.email,         // <-- Constructor actualizado
     required this.oposicion,
     required this.role,
     required this.active,
@@ -29,6 +31,7 @@ class User {
       id: authResponse.id,
       nombre: authResponse.nombre,
       nombreUsuario: authResponse.nombreUsuario,
+      email: authResponse.email,       // <-- Aquí asignamos email
       oposicion: authResponse.oposicion,
       role: authResponse.role,
       active: true, // Asumo que siempre es true, pero puedes ajustarlo
@@ -43,6 +46,7 @@ class User {
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? "Desconocido",
       nombreUsuario: json['nombreUsuario'] ?? "Desconocido",
+      email: json['email'] ?? "Sin email",       // <-- Aquí agregamos email desde JSON
       oposicion: json['oposicion'] ?? "NINGUNA",
       role: json['role'] ?? "Usuario",
       active: json['active'] ?? false, // Se asigna false si es null
@@ -60,6 +64,7 @@ class User {
       'id': id,
       'nombre': nombre,
       'nombreUsuario': nombreUsuario,
+      'email': email,                   // <-- Incluido en JSON de salida
       'oposicion': oposicion,
       'role': role,
       'active': active,

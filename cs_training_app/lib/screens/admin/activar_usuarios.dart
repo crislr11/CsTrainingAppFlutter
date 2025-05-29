@@ -80,32 +80,45 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Editar usuario'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre de usuario'),
-            ),
-            TextField(
-              controller: creditosController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Créditos'),
-            ),
-            Row(
+        content: StatefulBuilder(
+          builder: (context, setState) => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Pagado'),
-                Checkbox(
-                  value: pagado,
-                  onChanged: (value) {
-                    setState(() {
-                      pagado = value ?? false;
-                    });
-                  },
+                TextField(
+                  controller: nombreController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre de usuario',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: creditosController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Créditos',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('¿Pagado?', style: TextStyle(fontSize: 16)),
+                    Checkbox(
+                      value: pagado,
+                      onChanged: (value) {
+                        setState(() {
+                          pagado = value ?? false;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -346,6 +359,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                   final user = getFilteredUsers(searchQuery)[index];
                   return GestureDetector(
                     onDoubleTap: () => _toggleUserStatus(user.id),
+                    onLongPress: () => _editUserDialog(user),
                     child: Card(
                       color: user.active ? Colors.green : Colors.red,
                       shape: RoundedRectangleBorder(

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 
 class AdminService {
-  final String _baseUrl = 'http://localhost:8080/api/admin/user'; // para emulador Android
+  final String _baseUrl = 'http://35.180.5.103:8080/api/admin/user'; // para emulador Android
 
   // Obtiene el token de autenticación desde SharedPreferences
   Future<String?> _getToken() async {

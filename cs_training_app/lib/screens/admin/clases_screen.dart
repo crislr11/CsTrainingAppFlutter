@@ -76,7 +76,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
       resultado.sort((a, b) {
         DateTime fechaA = a.fecha;
         DateTime fechaB = b.fecha;
-        return fechaB.compareTo(fechaA); // De mayor a menor
+        return fechaB.compareTo(fechaA);
       });
 
       setState(() {
@@ -235,28 +235,35 @@ class _ClasesScreenState extends State<ClasesScreen> {
               children: [
                 const Text(
                   'Oposición: ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), // fuente más pequeña
                 ),
                 const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: oposicionSeleccionada,
-                  items: oposiciones.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(_formatearOposicion(value)), // Convertimos para mostrar
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      oposicionSeleccionada = newValue;
-                    });
-                    _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
-                  },
+                Expanded(  // para que ocupe espacio disponible sin overflow
+                  child: DropdownButton<String>(
+                    isExpanded: true,  // importante para que el dropdown ocupe todo el ancho del Expanded
+                    value: oposicionSeleccionada,
+                    items: oposiciones.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          _formatearOposicion(value),
+                          overflow: TextOverflow.ellipsis, // recorta texto largo con puntos suspensivos
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        oposicionSeleccionada = newValue;
+                      });
+                      _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
+                    },
+                  ),
                 ),
               ],
             ),
           ),
-
+          
           // Contador de entrenamientos encontrados
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -296,15 +303,17 @@ class _ClasesScreenState extends State<ClasesScreen> {
               itemCount: entrenamientos.length,
               itemBuilder: (context, index) {
                 final entrenamiento = entrenamientos[index];
-                DateTime fechaEntrenamiento = entrenamiento.fecha;
-                String formattedTime = "${fechaEntrenamiento.hour.toString().padLeft(2, '0')}:${fechaEntrenamiento.minute.toString().padLeft(2, '0')}";
+                final fechaHoraFormateada = DateFormat('d MMM y · HH:mm', 'es_ES')
+                    .format(entrenamiento.fecha);
 
                 return Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   margin: const EdgeInsets.symmetric(vertical: 8),
+                  elevation: 3,
                   child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     title: Text(
                       _formatearOposicion(entrenamiento.oposicion),
                       style: GoogleFonts.rubik(fontWeight: FontWeight.w600),
@@ -313,14 +322,10 @@ class _ClasesScreenState extends State<ClasesScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Fecha: ${DateFormat('yyyy-MM-dd').format(fechaEntrenamiento)}',
+                          '📅 $fechaHoraFormateada',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        Text(
-                          'Hora: $formattedTime',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text('Lugar: ${entrenamiento.lugar}'),
+                        Text('📍 Lugar: ${entrenamiento.lugar}'),
                       ],
                     ),
                     trailing: Row(
@@ -381,7 +386,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
                 );
               },
             ),
-          ),
+          )
         ],
       ),
 

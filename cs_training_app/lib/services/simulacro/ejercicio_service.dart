@@ -7,7 +7,7 @@ import '../../models/simulacro/ejercicio.dart';
 
 
 class EjercicioService {
-  final String baseUrl = 'http://localhost:8080/api/ejercicio';
+  final String baseUrl = 'http://35.180.5.103:8080/api/ejercicio';
 
   // Obtener token de SharedPreferences
   Future<String?> _getToken() async {
