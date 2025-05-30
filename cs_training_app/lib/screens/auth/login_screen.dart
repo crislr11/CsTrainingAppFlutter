@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await AuthService().login(loginRequest);
 
-      print("Respuesta de login: $response");  // Imprimir la respuesta completa de login
+
 
       if (response != null && response['token'] != null) {
         // Procesar la respuesta y crear el objeto User
@@ -42,12 +42,15 @@ class _LoginScreenState extends State<LoginScreen> {
         print('ID guardado: ${response['id']}');
         await prefs.setString('nombre', user.nombre);
         await prefs.setString('nombreUsuario', user.nombreUsuario);
-        await prefs.setString('email', response['email'] ?? 'Sin email'); // Solo si viene en el response
+        await prefs.setString('email', response['email'] ?? 'Sin email');
         await prefs.setString('oposicion', user.oposicion);
         await prefs.setString('role', user.role);
         await prefs.setBool('active', user.active);
         await prefs.setInt('creditos', user.creditos);
         await prefs.setBool('pagado', user.pagado);
+        await prefs.setString('oposicion', user.oposicion);
+        await prefs.setInt('creditos', user.creditos);
+
 
 
         if (user.role == "ADMIN") {

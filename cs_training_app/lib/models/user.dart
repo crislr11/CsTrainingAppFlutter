@@ -5,19 +5,19 @@ class User {
   final int id;
   final String nombre;
   final String nombreUsuario;
-  final String email;          // <-- Nuevo campo email
+  final String email;
   final String oposicion;
   final String role;
   final bool active;
   final int creditos;
-  bool pagado; // Puede cambiar a bool? si deseas permitir valores null
+  bool pagado;
   final List<Simulacro> simulacros;
 
   User({
     required this.id,
     required this.nombre,
     required this.nombreUsuario,
-    required this.email,         // <-- Constructor actualizado
+    required this.email,
     required this.oposicion,
     required this.role,
     required this.active,

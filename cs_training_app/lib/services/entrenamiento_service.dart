@@ -58,6 +58,32 @@ class EntrenamientoService {
     }
   }
 
+  Future<List<Entrenamiento>> getFuturosEntrenamientosPorOposicion(String oposicion) async {
+    final url = Uri.parse('$baseUrl/api/entrenamientos/futurosEntrenos/$oposicion');
+    final headers = await _getHeaders();
+    print(url);
+    try {
+      final response = await http.get(url, headers: headers);
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data is List) {
+          return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+        } else {
+          throw Exception('Formato inesperado en la respuesta');
+        }
+      } else {
+        throw Exception('Error en la respuesta del servidor: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener entrenamientos futuros por oposición: ${e.toString()}');
+    }
+  }
+
+
+
 
   // Obtener entrenamientos por oposición
   Future<List<Entrenamiento>> getTrainingsByOpposition(String oposicion) async {
@@ -69,6 +95,26 @@ class EntrenamientoService {
         return data.map((entrenamiento) => Entrenamiento.fromJson(entrenamiento)).toList();
       } else {
         throw Exception('Error al obtener los entrenamientos por oposición: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+  // Obtener entrenamientos futuros por oposición
+  Future<List<Entrenamiento>> getFutureTrainingsByOpposition(String oposicion) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/entrenamientos/futurosEntrenos/$oposicion'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return data.map((entrenamiento) => Entrenamiento.fromJson(entrenamiento)).toList();
+      } else if (response.statusCode == 403) {
+        throw Exception('Acceso denegado: No tienes permisos para realizar esta acción');
+      } else {
+        throw Exception('Error al obtener entrenamientos futuros por oposición: ${response.statusCode}');
       }
     } catch (e) {
       rethrow;

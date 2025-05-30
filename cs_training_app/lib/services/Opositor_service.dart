@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/entrenamiento.dart';
+import 'entrenamiento_service.dart';
 
 class OpositorService {
   static const String _baseUrl = 'http://35.180.5.103:8080/api/opositor';
@@ -38,7 +42,14 @@ class OpositorService {
         }),
       );
 
+      final data = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        int creditos = prefs.getInt('creditos') ?? 0;
+        if (creditos > 0) {
+          await prefs.setInt('creditos', creditos - 1);
+        }
         return '¡Te has apuntado al entrenamiento correctamente!';
       } else {
         final errorData = jsonDecode(response.body);
@@ -66,6 +77,10 @@ class OpositorService {
       );
 
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        int creditos = prefs.getInt('creditos') ?? 0; // Obtiene créditos actuales, 0 si no hay
+        await prefs.setInt('creditos', creditos + 1);
+
         return '¡Te has desapuntado del entrenamiento correctamente!';
       } else {
         final errorData = jsonDecode(response.body);
@@ -76,25 +91,32 @@ class OpositorService {
     }
   }
 
-  // Obtener entrenamientos del opositor
-  Future<List<dynamic>> getEntrenamientosDelOpositor(int userId) async {
-    final url = Uri.parse('$_baseUrl/entrenamientos/$userId');
-    final headers = await _getHeaders();
-
+  Future<List<Entrenamiento>> getEntrenamientosDelOpositor(int userId) async {
     try {
-      final response = await http.get(url, headers: headers);
+      final headers = await _getHeaders();
+      final url = Uri.parse('$_baseUrl/entrenamientos/$userId');
 
+      final response = await http.get(url, headers: headers);
+      print(response.body);
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+
+        if (data is List) {
+          return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+        } else {
+          throw Exception('Formato inesperado en la respuesta');
+        }
       } else {
         final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Error al obtener entrenamientos');
+        throw Exception(errorData['message'] ?? 'Error HTTP ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception(
-          'Error al obtener los entrenamientos: ${e.toString()}');
+      debugPrint('Error en getEntrenamientosDelOpositor: $e');
+      rethrow;
     }
   }
+
+
 
   // Añadir marca
   Future<String> addMarca(Map<String, dynamic> marcaData) async {
@@ -245,4 +267,23 @@ class OpositorService {
       throw Exception('Error al cargar la foto: ${e.toString()}');
     }
   }
+
+  Future<List<dynamic>> getFutureTrainingsByOpposition(String oposicion) async {
+    final url = Uri.parse('$_baseUrl/futurosEntrenos/$oposicion');
+    final headers = await _getHeaders();
+
+    try {
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Error al obtener entrenamientos futuros');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener entrenamientos futuros: ${e.toString()}');
+    }
+  }
+
 }

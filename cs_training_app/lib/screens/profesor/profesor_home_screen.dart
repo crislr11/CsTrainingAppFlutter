@@ -66,7 +66,6 @@ class _ProfesorHomeScreenState extends State<ProfesorHomeScreen> {
               ...alumnos.map((alumno) => ListTile(
                 leading: const Icon(Icons.person),
                 title: Text(alumno.nombreUsuario),
-                subtitle: Text(alumno.nombre),
               )),
             ],
           ),

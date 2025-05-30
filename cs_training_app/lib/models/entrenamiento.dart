@@ -18,15 +18,26 @@ class Entrenamiento {
   });
 
   factory Entrenamiento.fromJson(Map<String, dynamic> json) {
+    final fechaStr = json['fecha'] as String?;
+    final lugarStr = json['lugar'] as String?;
+
+    if (fechaStr == null) {
+      throw Exception('El campo fecha es obligatorio y viene null');
+    }
+    if (lugarStr == null) {
+      throw Exception('El campo lugar es obligatorio y viene null');
+    }
+
     return Entrenamiento(
-      id: json['id'],
-      oposicion: json['oposicion'],
+      id: json['id'] as int?,
+      oposicion: json['oposicion'] as String? ?? 'Sin oposicion',
       profesores: List<User>.from(json['profesores']?.map((x) => User.fromJson(x)) ?? []),
       alumnos: List<User>.from(json['alumnos']?.map((x) => User.fromJson(x)) ?? []),
-      fecha: DateTime.parse(json['fecha']),
-      lugar: json['lugar'],
+      fecha: DateTime.parse(fechaStr),
+      lugar: lugarStr,
     );
   }
+
 
   Map<String, dynamic> toJson() {
     return {
