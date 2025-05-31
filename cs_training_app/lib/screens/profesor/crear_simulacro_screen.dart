@@ -5,7 +5,8 @@ import 'package:cs_training_app/services/admin_services.dart';
 import 'package:cs_training_app/models/simulacro/simulacro.dart';
 import '../../models/simulacro/ejercicio.dart';
 import '../../models/simulacro/ejercicio_marca.dart';
-import '../../services/simulacro/simulacro.dart';
+import '../../services/simulacro/simulacro_service.dart';
+import '../../widget/simulacro_card.dart';
 
 class CrearSimulacroScreen extends StatefulWidget {
   const CrearSimulacroScreen({super.key});
@@ -501,125 +502,16 @@ class _CrearSimulacroScreenState extends State<CrearSimulacroScreen> {
             const SizedBox(height: 16),
             if (_nombreUsuarioSeleccionado.isNotEmpty)
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Simulacros de $_nombreUsuarioSeleccionado',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _simulacrosUsuario.isEmpty
-                        ? const Text(
-                      'Este usuario no tiene simulacros asignados.',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    )
-                        : Expanded(
-                      child: ListView.builder(
-                        itemCount: _simulacrosUsuario.length,
-                        itemBuilder: (context, index) {
-                          final simulacro = _simulacrosUsuario[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: ExpansionTile(
-                              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                              collapsedBackgroundColor: const Color(0xFFFFC107),
-                              backgroundColor: const Color(0xFFFFF8E1),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          simulacro.titulo ?? '',
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18.0,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Fecha: ${_formatearFecha(simulacro.fecha)}',
-                                          style: const TextStyle(
-                                            color: Colors.black54,
-                                            fontSize: 16.0,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Confirmar eliminación'),
-                                          content: const Text('¿Estás seguro de que quieres eliminar este simulacro?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.of(context).pop(),
-                                              child: const Text('Cancelar'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                _eliminarSimulacro(simulacro.id ?? 0);
-                                              },
-                                              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              children: simulacro.ejercicios.isEmpty
-                                  ? [
-                                const Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text(
-                                    "Este simulacro no tiene ejercicios.",
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                ),
-                              ]
-                                  : simulacro.ejercicios.map((ejercicio) {
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  color: const Color(0xFFFFC107),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  child: ListTile(
-                                    title: Text(
-                                      ejercicio.nombre ?? 'Nombre desconocido', // Acceder a 'nombre' directamente
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    subtitle: Text(
-                                      'MARCA: ${ejercicio.marca.toString()}', // Mostrar la marca, asegurándose de que siempre sea una cadena
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-
-
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                child: ListView.builder(
+                  itemCount: _simulacrosUsuario.length,
+                  itemBuilder: (context, index) {
+                    final simulacro = _simulacrosUsuario[index];
+                    return SimulacroCard(
+                      simulacro: simulacro,
+                      showDeleteButton: true,
+                      onDelete: (id) => _eliminarSimulacro(id),
+                    );
+                  },
                 ),
               ),
           ],

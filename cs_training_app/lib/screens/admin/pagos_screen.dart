@@ -3,6 +3,7 @@ import 'package:cs_training_app/services/pago_service.dart';
 import 'package:cs_training_app/models/user.dart';
 import 'package:cs_training_app/models/pago.dart';
 import '../../services/admin_services.dart';
+import '../../widget/pago_card.dart';
 
 class PagosScreen extends StatefulWidget {
   @override
@@ -12,15 +13,11 @@ class PagosScreen extends StatefulWidget {
 class _PagosScreenState extends State<PagosScreen> {
   final List<User> _users = [];
   final List<User> _filteredUsers = [];
-  final List<Pago> _pagos = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
-  int? _selectedUserId;
 
-  // Nuevo estado para filtro: null = todos, true = pagados, false = no pagados
   bool? _filterPagado;
 
-  // Variables de color
   final Color primaryColor = Colors.amber;
   final Color backgroundColor = Colors.black;
 
@@ -67,51 +64,38 @@ class _PagosScreenState extends State<PagosScreen> {
 
   void _setFilter(bool? pagado) {
     setState(() {
-      _filterPagado = pagado;
+      if (_filterPagado == pagado) {
+        _filterPagado = null;
+      } else {
+        _filterPagado = pagado;
+      }
     });
     _applyFilters();
   }
 
-  Future<void> _loadPagos(int userId) async {
-    setState(() {
-      _isLoading = true;
-      _selectedUserId = userId;
-    });
+
+  Future<List<Pago>> _loadPagos(int userId) async {
     try {
       final pagos = await PagoService().obtenerHistorialPagos(userId);
-      setState(() {
-        _pagos.clear();
-        _pagos.addAll(pagos);
-
-        // Ordenar los pagos por fecha (de mayor a menor)
-        _pagos.sort((a, b) => b.fechaPago.compareTo(a.fechaPago)); // Ordenar de mayor a menor
-      });
+      pagos.sort((a, b) => b.fechaPago.compareTo(a.fechaPago));
+      return pagos;
     } catch (e) {
       _showError('Error al cargar pagos: $e');
-    } finally {
-      setState(() => _isLoading = false);
+      return [];
     }
   }
 
-  // Método para crear un pago y actualizar el estado de "pagado" de un usuario
-  Future<void> _crearPago() async {
-    if (_selectedUserId == null) return;
-
+  Future<void> _crearPago(int userId) async {
     setState(() => _isLoading = true);
     try {
-      // Creando el pago
-      await PagoService().crearPago(_selectedUserId!);
-      
-      // Actualizando el estado del usuario
-      setState(() {
-        final userIndex = _users.indexWhere((user) => user.id == _selectedUserId);
-        if (userIndex != -1) {
-          _users[userIndex].pagado = true; // Cambiar a verde (pagado)
-        }
-      });
-
-      // Recargar los pagos del usuario seleccionado
-      await _loadPagos(_selectedUserId!);
+      await PagoService().crearPago(userId);
+      final userIndex = _users.indexWhere((u) => u.id == userId);
+      if (userIndex != -1) {
+        setState(() {
+          _users[userIndex].pagado = true;
+          _applyFilters();
+        });
+      }
       _showSuccess('Pago creado exitosamente');
     } catch (e) {
       _showError('Error al crear pago: $e');
@@ -124,7 +108,6 @@ class _PagosScreenState extends State<PagosScreen> {
     setState(() => _isLoading = true);
     try {
       await PagoService().eliminarPago(pagoId);
-      setState(() => _pagos.removeWhere((p) => p.id == pagoId));
       _showSuccess('Pago eliminado exitosamente');
     } catch (e) {
       _showError('Error al eliminar pago: $e');
@@ -135,24 +118,111 @@ class _PagosScreenState extends State<PagosScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  void _openPagosModal(User user) async {
+    final pagos = await _loadPagos(user.id);
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Barra para arrastrar
+                  Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[600],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  Text(
+                    'Historial de Pagos de ${user.nombreUsuario}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Expanded(
+                    child: pagos.isEmpty
+                        ? Center(
+                      child: Text(
+                        'No hay pagos registrados.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    )
+                        : ListView.builder(
+                      controller: scrollController,
+                      itemCount: pagos.length,
+                      itemBuilder: (context, index) {
+                        final pago = pagos[index];
+                        return PagoCard(
+                          pago: pago,
+                          onDelete: () async {
+                            await _eliminarPago(pago.id);
+                            pagos.removeAt(index);
+                            setState(() {});
+                          },
+                          primaryColor: primaryColor,
+                          backgroundColor: backgroundColor,
+                        );
+                      },
+                    ),
+                  ),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _crearPago(user.id);
+                      // Recargar la lista de pagos tras agregar uno
+                      final nuevosPagos = await _loadPagos(user.id);
+                      if (mounted) {
+                        Navigator.pop(context);
+                        _openPagosModal(user); // reabrir modal con datos actualizados
+                      }
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(primaryColor),
+                    ),
+                    child: Text(
+                      'Agregar Nuevo Pago',
+                      style: TextStyle(color: backgroundColor),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -179,10 +249,8 @@ class _PagosScreenState extends State<PagosScreen> {
               },
               displayStringForOption: (User user) => user.nombreUsuario,
               onSelected: (User selectedUser) {
-                setState(() {
-                  _searchController.text = selectedUser.nombreUsuario;
-                  _loadPagos(selectedUser.id);
-                });
+                _openPagosModal(selectedUser);
+                _searchController.text = selectedUser.nombreUsuario;
               },
               fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
                 return TextField(
@@ -199,7 +267,6 @@ class _PagosScreenState extends State<PagosScreen> {
             ),
           ),
 
-          // Aquí añadimos los botones de filtro:
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(
@@ -208,14 +275,9 @@ class _PagosScreenState extends State<PagosScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _setFilter(true),
                     icon: const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                    label: const Text(
-                      'Pagados',
-                      style: TextStyle(fontSize: 14),
-                    ),
+                    label: const Text('Pagados', style: TextStyle(fontSize: 14)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _filterPagado == true
-                          ? Colors.green
-                          : Colors.green.withOpacity(0.5),
+                      backgroundColor: _filterPagado == true ? Colors.green : Colors.green.withOpacity(0.5),
                       foregroundColor: Colors.white,
                       elevation: _filterPagado == true ? 6 : 2,
                       shadowColor: Colors.black,
@@ -228,14 +290,9 @@ class _PagosScreenState extends State<PagosScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _setFilter(false),
                     icon: const Icon(Icons.cancel, color: Colors.white, size: 18),
-                    label: const Text(
-                      'No Pagados',
-                      style: TextStyle(fontSize: 14),
-                    ),
+                    label: const Text('No Pagados', style: TextStyle(fontSize: 14)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _filterPagado == false
-                          ? Colors.red
-                          : Colors.red.withOpacity(0.5),
+                      backgroundColor: _filterPagado == false ? Colors.red : Colors.red.withOpacity(0.5),
                       foregroundColor: Colors.white,
                       elevation: _filterPagado == false ? 6 : 2,
                       shadowColor: Colors.black,
@@ -246,7 +303,6 @@ class _PagosScreenState extends State<PagosScreen> {
               ],
             ),
           ),
-
 
           Expanded(
             child: _isLoading && _filteredUsers.isEmpty
@@ -261,7 +317,7 @@ class _PagosScreenState extends State<PagosScreen> {
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   color: user.pagado ? Colors.green : Colors.red,
                   child: InkWell(
-                    onTap: () => _loadPagos(user.id),
+                    onTap: () => _openPagosModal(user),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
@@ -286,10 +342,7 @@ class _PagosScreenState extends State<PagosScreen> {
                                     color: primaryColor,
                                   ),
                                 ),
-                                Text(
-                                  user.role,
-                                  style: TextStyle(color: Colors.white),
-                                ),
+                                Text(user.role, style: TextStyle(color: Colors.white)),
                               ],
                             ),
                           ),
@@ -304,89 +357,6 @@ class _PagosScreenState extends State<PagosScreen> {
           ),
         ],
       ),
-
-      // ... El resto sin cambios ...
-      bottomNavigationBar: _selectedUserId != null
-          ? Container(
-        height: 300,
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          border: Border(top: BorderSide(color: Colors.grey)),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Historial de Pagos',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: primaryColor,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => setState(() {
-                    _pagos.clear();
-                    _selectedUserId = null;
-                  }),
-                  color: primaryColor,
-                ),
-              ],
-            ),
-            Expanded(
-              child: _pagos.isEmpty
-                  ? Center(
-                child: Text(
-                  'No hay pagos registrados.',
-                  style: TextStyle(color: Colors.white),
-                ),
-              )
-                  : ListView.builder(
-                itemCount: _pagos.length,
-                itemBuilder: (context, index) {
-                  final pago = _pagos[index];
-                  return Card(
-                    color: backgroundColor,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: primaryColor,
-                        child: Text(
-                          '\$${pago.monto.toStringAsFixed(0)}',
-                          style: TextStyle(color: backgroundColor),
-                        ),
-                      ),
-                      title: Text(
-                        _formatDate(pago.fechaPago),
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete, color: Colors.white),
-                        onPressed: () => _eliminarPago(pago.id),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _crearPago,
-              style: ButtonStyle(
-                backgroundColor: MaterialStateProperty.all(primaryColor),
-              ),
-              child: Text(
-                'Agregar Nuevo Pago',
-                style: TextStyle(color: backgroundColor),
-              ),
-            ),
-          ],
-        ),
-      )
-          : null,
     );
   }
 }

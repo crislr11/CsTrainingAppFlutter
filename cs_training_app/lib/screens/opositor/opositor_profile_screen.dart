@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/Opositor_service.dart';
 import '../../widget/built_entrenamiento_card.dart';
 import 'entrenamientos_disponibles_screen.dart';
+import 'mis_marcas_screen.dart';
+import 'mis_pagos_screen.dart';
+import 'mis_simulacros_screen.dart';
 
 class OpositorPorfileScreen extends StatefulWidget {
   const OpositorPorfileScreen({super.key});
@@ -397,9 +400,26 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen> with Widg
                       ),
                     ).then((_) => _actualizarCreditos());
                   }),
-                  _buildMiniButton(Icons.settings, 'Ajustes', () {}),
-                  _buildMiniButton(Icons.help, 'Ayuda', () {}),
-                  _buildMiniButton(Icons.group, 'Grupos', () {}),
+                  _buildMiniButton(Icons.assignment, 'Simulacros', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MisSimulacrosScreen(userId: _userId),
+                      ),
+                    );
+                  }),
+                  _buildMiniButton(Icons.attach_money, 'Pagos', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MisPagosScreen(userId: _userId,)),
+                    );
+                  }),
+                  _buildMiniButton(Icons.playlist_add_check, 'Mis Marcas', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => MisMarcasScreen(userId: _userId,)),
+                    );
+                  }),
                 ],
               ),
             ),

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/entrenamiento.dart';
+import '../models/marca.dart';
 import 'entrenamiento_service.dart';
 
 class OpositorService {
@@ -115,11 +116,8 @@ class OpositorService {
       rethrow;
     }
   }
-
-
-
   // Añadir marca
-  Future<String> addMarca(Map<String, dynamic> marcaData) async {
+  Future<String> addMarca(Marca marca) async {
     final url = Uri.parse(_baseUrl);
     final headers = await _getHeaders();
 
@@ -127,7 +125,7 @@ class OpositorService {
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode(marcaData),
+        body: jsonEncode(marca.toJson()),
       );
 
       if (response.statusCode == 200) {
@@ -141,8 +139,8 @@ class OpositorService {
     }
   }
 
-  // Eliminar marca
-  Future<String> removeMarca(Map<String, dynamic> marcaData) async {
+
+  Future<String> removeMarca(Marca marca) async {
     final url = Uri.parse(_baseUrl);
     final headers = await _getHeaders();
 
@@ -150,7 +148,7 @@ class OpositorService {
       final response = await http.delete(
         url,
         headers: headers,
-        body: jsonEncode(marcaData),
+        body: jsonEncode(marca.toJson()),
       );
 
       if (response.statusCode == 200) {
@@ -161,29 +159,6 @@ class OpositorService {
       }
     } catch (e) {
       throw Exception('Error al eliminar marca: ${e.toString()}');
-    }
-  }
-
-  // Obtener marcas por fecha
-  Future<List<dynamic>> getMarcasPorFecha(
-      int userId, DateTime desde, DateTime hasta) async {
-    final url = Uri.parse('$_baseUrl/$userId').replace(queryParameters: {
-      'desde': desde.toIso8601String(),
-      'hasta': hasta.toIso8601String(),
-    });
-    final headers = await _getHeaders();
-
-    try {
-      final response = await http.get(url, headers: headers);
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Error al obtener marcas');
-      }
-    } catch (e) {
-      throw Exception('Error al obtener marcas por fecha: ${e.toString()}');
     }
   }
 

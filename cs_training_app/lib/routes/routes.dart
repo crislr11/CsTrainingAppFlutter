@@ -6,7 +6,7 @@ import '../screens/admin/activar_usuarios.dart';
 import '../screens/admin/admin_home.dart';
 import '../screens/admin/clases_screen.dart';
 import '../screens/admin/crear_clases_screen.dart';
-import '../screens/opositor/opositor_porfile_screen.dart';
+import '../screens/opositor/opositor_profile_screen.dart';
 import '../screens/profesor/crear_simulacro_screen.dart';
 import '../screens/profesor/profesor_home_screen.dart';
 
