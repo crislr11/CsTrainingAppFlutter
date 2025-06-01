@@ -98,14 +98,24 @@ class OpositorService {
       final url = Uri.parse('$_baseUrl/entrenamientos/$userId');
 
       final response = await http.get(url, headers: headers);
-      print(response.body);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
 
-        if (data is List) {
-          return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+      if (response.statusCode == 200) {
+        final body = response.body;
+
+        // Verifica si es un mensaje de texto plano
+        if (body.trim().startsWith('[')) {
+          final data = jsonDecode(body);
+          if (data is List) {
+            return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+          } else {
+            throw Exception('Formato inesperado en la respuesta');
+          }
         } else {
-          throw Exception('Formato inesperado en la respuesta');
+          // Mensaje plano (no JSON), lo puedes usar para mostrarlo o devolver lista vacía
+          debugPrint('Mensaje del servidor: $body');
+          return []; // o lanza una excepción si prefieres manejarlo arriba
         }
       } else {
         final errorData = jsonDecode(response.body);
@@ -116,6 +126,7 @@ class OpositorService {
       rethrow;
     }
   }
+
   // Añadir marca
   Future<String> addMarca(Marca marca) async {
     final url = Uri.parse(_baseUrl);

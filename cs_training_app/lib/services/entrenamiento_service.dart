@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/entrenamiento.dart';
@@ -61,27 +62,35 @@ class EntrenamientoService {
   Future<List<Entrenamiento>> getFuturosEntrenamientosPorOposicion(String oposicion) async {
     final url = Uri.parse('$baseUrl/api/entrenamientos/futurosEntrenos/$oposicion');
     final headers = await _getHeaders();
-    print(url);
+    debugPrint('URL: $url');
+
     try {
       final response = await http.get(url, headers: headers);
-      print(response.body);
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data is List) {
-          return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+        final body = response.body;
+        // Si el body empieza con [ asumimos que es un JSON válido tipo lista
+        if (body.trim().startsWith('[')) {
+          final data = jsonDecode(body);
+          if (data is List) {
+            return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
+          } else {
+            throw Exception('Formato inesperado en la respuesta');
+          }
         } else {
-          throw Exception('Formato inesperado en la respuesta');
+          debugPrint('Mensaje del servidor (no JSON): $body');
+          return []; // o lanza una excepción si prefieres
         }
       } else {
         throw Exception('Error en la respuesta del servidor: ${response.statusCode}');
       }
     } catch (e) {
+      debugPrint('Error en getFuturosEntrenamientosPorOposicion: $e');
       throw Exception('Error al obtener entrenamientos futuros por oposición: ${e.toString()}');
     }
   }
-
 
 
 
