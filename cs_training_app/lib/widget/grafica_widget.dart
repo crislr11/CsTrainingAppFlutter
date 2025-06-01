@@ -18,7 +18,7 @@ class Grafica extends StatelessWidget {
     final nombresTiempo = [
       '1000 resistencia',
       'barra(suspension)',
-      'circuito de agilidad',
+      'circuito agilidad',
       '50 metros velocidad',
       '2000 resistencia',
     ];

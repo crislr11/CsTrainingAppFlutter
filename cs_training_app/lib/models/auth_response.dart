@@ -30,7 +30,7 @@ class AuthResponse {
       token: json['token'] ?? "",
       nombre: json['nombre'] ?? "",
       nombreUsuario: json['nombreUsuario'] ?? "Desconocido",
-      email: json['email'] ?? "",          // <-- Aquí asignamos email desde JSON
+      email: json['email'] ?? "",
       oposicion: json['oposicion'] ?? "No definida",
       role: json['role'] ?? "Usuario",
       id: json['id'] ?? 0,

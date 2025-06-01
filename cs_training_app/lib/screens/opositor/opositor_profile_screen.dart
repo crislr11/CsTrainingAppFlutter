@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cs_training_app/screens/opositor/ranking_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -246,247 +247,260 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen> with Widg
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Perfil de Usuario',
-          style: GoogleFonts.rubik(fontWeight: FontWeight.w700),
+      return GestureDetector(
+          onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity! < 0) {
+          // Deslizamiento de derecha a izquierda
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RankingScreen(oposicion: _oposicion),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Perfil de Usuario',
+            style: GoogleFonts.rubik(fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: const Color(0xFFFFC107),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refrescar',
+              onPressed: _refreshPage,
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _logout,
+            ),
+          ],
         ),
-        backgroundColor: const Color(0xFFFFC107),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refrescar',
-            onPressed: _refreshPage,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
 
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    offset: const Offset(0, 5),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundColor: const Color(0xFFFFC107),
-                      backgroundImage: _image != null ? FileImage(_image!) : null,
-                      child: _image == null ? const Icon(Icons.person, size: 80, color: Colors.white) : null,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      offset: const Offset(0, 5),
+                      blurRadius: 12,
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          _nombreCompleto,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$_nombreUsuario',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 20,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 2.0),
-                                    child: Icon(Icons.email, color: Color(0xFFFFC107), size: 18),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _email,
-                                      style: const TextStyle(color: Colors.white70, fontSize: 18),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 2.0),
-                                    child: Icon(Icons.school, color: Color(0xFFFFC107), size: 18),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _formatearOposicion(_oposicion),
-                                      style: const TextStyle(color: Colors.white70, fontSize: 18),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 2.0),
-                                    child: Icon(Icons.monetization_on, color: Color(0xFFFFC107), size: 18),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Créditos: $_creditos',
-                                      style: const TextStyle(color: Colors.white70, fontSize: 18),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildMiniButton(Icons.fitness_center, 'Clases', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EntrenamientosDisponiblesScreen(oposicion: _oposicion),
-                      ),
-                    ).then((_) => _actualizarCreditos());
-                  }),
-                  _buildMiniButton(Icons.assignment, 'Simulacros', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MisSimulacrosScreen(userId: _userId),
-                      ),
-                    );
-                  }),
-                  _buildMiniButton(Icons.attach_money, 'Pagos', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MisPagosScreen(userId: _userId,)),
-                    );
-                  }),
-                  _buildMiniButton(Icons.playlist_add_check, 'Mis Marcas', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => MisMarcasScreen(userId: _userId,)),
-                    );
-                  }),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _loadingEntrenamientos
-                  ? const Center(child: CircularProgressIndicator())
-                  : _entrenamientos.isEmpty
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
-                      'No tienes entrenamientos asignados',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundColor: const Color(0xFFFFC107),
+                        backgroundImage: _image != null ? FileImage(_image!) : null,
+                        child: _image == null ? const Icon(Icons.person, size: 80, color: Colors.white) : null,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EntrenamientosDisponiblesScreen(oposicion: _oposicion),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _nombreCompleto,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ).then((_) => _actualizarCreditos());
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFC107),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      child: const Text(
-                        'Ver entrenamientos disponibles',
-                        style: TextStyle(color: Colors.black),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$_nombreUsuario',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 20,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 2.0),
+                                      child: Icon(Icons.email, color: Color(0xFFFFC107), size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _email,
+                                        style: const TextStyle(color: Colors.white70, fontSize: 18),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 2.0),
+                                      child: Icon(Icons.school, color: Color(0xFFFFC107), size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _formatearOposicion(_oposicion),
+                                        style: const TextStyle(color: Colors.white70, fontSize: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 2.0),
+                                      child: Icon(Icons.monetization_on, color: Color(0xFFFFC107), size: 18),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Créditos: $_creditos',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              )
-              :SizedBox(
-                height: 300,
-                child: ListView.separated(
-                  itemCount: _entrenamientos.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final entrenamiento = _entrenamientos[index];
-                    final inscrito = true;
-                    return EntrenamientoCard(
-                      entrenamiento: entrenamiento,
-                      inscrito: true ,
-                      onApuntarse: null,
-                      onDesapuntarse: inscrito ? () => _desapuntarseDeEntrenamiento(entrenamiento.id!) : null,
-                    );
+              ),
 
-                  },
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildMiniButton(Icons.fitness_center, 'Clases', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EntrenamientosDisponiblesScreen(oposicion: _oposicion),
+                        ),
+                      ).then((_) => _actualizarCreditos());
+                    }),
+                    _buildMiniButton(Icons.assignment, 'Simulacros', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MisSimulacrosScreen(userId: _userId),
+                        ),
+                      );
+                    }),
+                    _buildMiniButton(Icons.attach_money, 'Pagos', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MisPagosScreen(userId: _userId,)),
+                      );
+                    }),
+                    _buildMiniButton(Icons.playlist_add_check, 'Mis Marcas', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MisMarcasScreen(userId: _userId,)),
+                      );
+                    }),
+                  ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 30),
-          ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _loadingEntrenamientos
+                    ? const Center(child: CircularProgressIndicator())
+                    : _entrenamientos.isEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'No tienes entrenamientos asignados',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  EntrenamientosDisponiblesScreen(oposicion: _oposicion),
+                            ),
+                          ).then((_) => _actualizarCreditos());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFC107),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text(
+                          'Ver entrenamientos disponibles',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                :SizedBox(
+                  height: 300,
+                  child: ListView.separated(
+                    itemCount: _entrenamientos.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final entrenamiento = _entrenamientos[index];
+                      final inscrito = true;
+                      return EntrenamientoCard(
+                        entrenamiento: entrenamiento,
+                        inscrito: true ,
+                        onApuntarse: null,
+                        onDesapuntarse: inscrito ? () => _desapuntarseDeEntrenamiento(entrenamiento.id!) : null,
+                      );
+
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
-      ),
+      )
     );
   }
 }
