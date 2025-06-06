@@ -1,7 +1,14 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user.dart';
 import '../../services/admin_services.dart';
+import '../../services/file_service.dart';
+import 'dart:typed_data' as typed_data;
+
+
 
 class ActivarUsuarios extends StatefulWidget {
   const ActivarUsuarios({super.key});
@@ -16,6 +23,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
   String selectedRole = 'todos';
   String searchQuery = '';
   bool? showOnlyActive;
+  final FileService _fileService = FileService();
 
   final amarillo = const Color(0xFFFFC107);
   final negro = Colors.black;
@@ -54,7 +62,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
     return users.where((user) {
       final matchesOposicion = selectedOposicion == 'todos' || user.oposicion == selectedOposicion;
       final matchesRole = selectedRole == 'todos' || user.role == selectedRole;
-      final matchesSearchQuery = user.nombreUsuario.toLowerCase().startsWith(searchQuery.toLowerCase());
+      final matchesSearchQuery = user.nombreUsuario.toLowerCase().contains(searchQuery.toLowerCase());
       final matchesActive = showOnlyActive == null || user.active == showOnlyActive;
       return matchesOposicion && matchesRole && matchesSearchQuery && matchesActive;
     }).toList();
@@ -128,14 +136,13 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
           ElevatedButton(
             onPressed: () async {
               try {
-                final updatedUser = {
-                  'nombreUsuario': nombreController.text,
+                final updatedUserData = {
+                  'nombre': nombreController.text,
                   'creditos': int.tryParse(creditosController.text) ?? 0,
                   'pagado': pagado,
                 };
 
-                await AdminService().updateUser(user.id, updatedUser);
-
+                await AdminService().updateUser(user.id, updatedUserData);
                 Navigator.pop(context);
                 _loadUsers();
               } catch (e) {
@@ -167,9 +174,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
     });
   }
 
-  // Método para confirmar eliminación
   Future<void> _confirmDeleteUser(int id) async {
-    // Muestra el diálogo de confirmación
     final confirmDelete = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -190,11 +195,10 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       },
     );
 
-    // Si la respuesta es sí (true), proceder a eliminar el usuario
     if (confirmDelete == true) {
       try {
-        await AdminService().deleteUser(id); // Aquí se debe implementar el método de eliminación
-        _loadUsers(); // Vuelve a cargar los usuarios después de eliminar
+        await AdminService().deleteUser(id);
+        _loadUsers();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Usuario eliminado correctamente')),
         );
@@ -210,21 +214,18 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Usuarios', style: GoogleFonts.poppins()),
+        title: Text('Gestión de Usuarios', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         backgroundColor: amarillo,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Filtros desplegables
+            // Filtros superiores
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Container(
-                    margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       border: Border.all(color: negro),
@@ -235,11 +236,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                       isExpanded: true,
                       underline: const SizedBox(),
                       value: selectedOposicion,
-                      onChanged: (newValue) {
-                        setState(() {
-                          selectedOposicion = newValue!;
-                        });
-                      },
+                      onChanged: (newValue) => setState(() => selectedOposicion = newValue!),
                       items: oposiciones.map((oposicion) {
                         return DropdownMenuItem<String>(
                           value: oposicion,
@@ -249,9 +246,9 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Container(
-                    margin: const EdgeInsets.only(left: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       border: Border.all(color: negro),
@@ -262,11 +259,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
                       isExpanded: true,
                       underline: const SizedBox(),
                       value: selectedRole,
-                      onChanged: (newValue) {
-                        setState(() {
-                          selectedRole = newValue!;
-                        });
-                      },
+                      onChanged: (newValue) => setState(() => selectedRole = newValue!),
                       items: roles.map((role) {
                         return DropdownMenuItem<String>(
                           value: role,
@@ -280,128 +273,63 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
             ),
             const SizedBox(height: 16),
 
-            // Campo de búsqueda
-            Autocomplete<User>(  // Autocomplete
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                final filteredUsers = getFilteredUsers(textEditingValue.text);
-                return filteredUsers.where((user) =>
-                    user.nombreUsuario.toLowerCase().startsWith(textEditingValue.text.toLowerCase())).toList();
-              },
-              displayStringForOption: (User user) => user.nombreUsuario,
-              onSelected: (User selectedUser) {
-                setState(() {
-                  searchQuery = selectedUser.nombreUsuario;
-                });
-              },
-              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                return TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  onSubmitted: (_) => onFieldSubmitted(),
-                  decoration: InputDecoration(
-                    labelText: 'Buscar por nombre de usuario',
-                    hintText: 'Escribe el nombre de usuario...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: negro),
-                    ),
-                    suffixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                );
-              },
+            // Barra de búsqueda
+            TextField(
+              onChanged: (value) => setState(() => searchQuery = value),
+              decoration: InputDecoration(
+                labelText: 'Buscar usuario',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
             ),
             const SizedBox(height: 16),
 
-            // Filtros por estado
+            // Filtros de estado
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton.icon(
-                  onPressed: () => _filterByStatus(true),
-                  icon: const Icon(Icons.check_circle, color: Colors.white),
+                FilterChip(
                   label: const Text('Activos'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: showOnlyActive == true ? Colors.green : Colors.green.withOpacity(0.5),
-                    foregroundColor: Colors.white,
-                    elevation: showOnlyActive == true ? 6 : 2,
-                    shadowColor: Colors.black,
+                  selected: showOnlyActive == true,
+                  onSelected: (_) => _filterByStatus(true),
+                  selectedColor: Colors.green,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: showOnlyActive == true ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(width: 20),
-                ElevatedButton.icon(
-                  onPressed: () => _filterByStatus(false),
-                  icon: const Icon(Icons.cancel, color: Colors.white),
+                FilterChip(
                   label: const Text('Inactivos'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: showOnlyActive == false ? Colors.red : Colors.red.withOpacity(0.5),
-                    foregroundColor: Colors.white,
-                    elevation: showOnlyActive == false ? 6 : 2,
-                    shadowColor: Colors.black,
+                  selected: showOnlyActive == false,
+                  onSelected: (_) => _filterByStatus(false),
+                  selectedColor: Colors.red,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: showOnlyActive == false ? Colors.white : Colors.black,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Lista de usuarios con el diseño cuadrado
+            // Lista de usuarios
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // 2 cuadros por fila
-                  crossAxisSpacing: 8.0,
-                  mainAxisSpacing: 8.0,
-                  childAspectRatio: 1, // Cuadrados
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                  childAspectRatio: 0.85,
                 ),
                 itemCount: getFilteredUsers(searchQuery).length,
                 itemBuilder: (context, index) {
                   final user = getFilteredUsers(searchQuery)[index];
-                  return GestureDetector(
-                    onDoubleTap: () => _toggleUserStatus(user.id),
-                    onLongPress: () => _editUserDialog(user),
-                    child: Card(
-                      color: user.active ? Colors.green : Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.white),
-                              onPressed: () {
-                                _confirmDeleteUser(user.id);
-                              },
-                            ),
-                          ),
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  user.nombreUsuario,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  user.oposicion,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return _buildUserCard(user);
                 },
               ),
             ),
@@ -414,5 +342,106 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
         child: const Icon(Icons.refresh, color: Colors.black),
       ),
     );
+  }
+
+  Widget _buildUserCard(User user) {
+    return FutureBuilder<typed_data.Uint8List>(
+      future: _fileService.downloadUserPhoto(user.id),
+      builder: (context, snapshot) {
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(15),
+            onTap: () => _editUserDialog(user),
+            onLongPress: () => _toggleUserStatus(user.id),
+            child: Container(
+              height: 250,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: user.active ? Colors.green[50] : Colors.red[50],
+              ),
+              child: Stack(
+                children: [
+                  // Botón eliminar en la esquina superior derecha
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _confirmDeleteUser(user.id),
+                    ),
+                  ),
+                  // Contenido centrado
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: user.active ? Colors.green : Colors.red,
+                                width: 3,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: snapshot.hasData
+                                  ? Image.memory(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildDefaultAvatar(),
+                              )
+                                  : _buildDefaultAvatar(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            user.nombreUsuario,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            _formatOposicion(user.oposicion),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+
+
+  Widget _buildDefaultAvatar() {
+    return const Icon(Icons.person, size: 50, color: Colors.grey);
+  }
+
+  String _formatOposicion(String oposicion) {
+    return oposicion.replaceAll('_', ' ').toLowerCase();
   }
 }

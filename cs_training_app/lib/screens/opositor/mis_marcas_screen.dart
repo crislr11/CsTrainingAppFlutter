@@ -52,7 +52,7 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
       });
 
       setState(() {
-        _ejercicios = ejercicios; // ya ordenados
+        _ejercicios = ejercicios;
         _marcasPorEjercicio = marcasPorEjercicio;
         _isLoading = false;
       });
@@ -64,6 +64,48 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
     }
   }
 
+  // Método para actualizar una marca específica después de eliminarla
+  void _onMarcaEliminada(Marca marcaEliminada) {
+    setState(() {
+      final ejercicioId = marcaEliminada.ejercicioId;
+      if (_marcasPorEjercicio.containsKey(ejercicioId)) {
+        _marcasPorEjercicio[ejercicioId]!.removeWhere((m) => m.id == marcaEliminada.id);
+
+        // Si no quedan marcas para este ejercicio, eliminamos la entrada
+        if (_marcasPorEjercicio[ejercicioId]!.isEmpty) {
+          _marcasPorEjercicio.remove(ejercicioId);
+        }
+      }
+
+      // Reordenar ejercicios por cantidad de marcas
+      _ejercicios.sort((a, b) {
+        final countA = _marcasPorEjercicio[a.id]?.length ?? 0;
+        final countB = _marcasPorEjercicio[b.id]?.length ?? 0;
+        return countB.compareTo(countA);
+      });
+    });
+  }
+
+  // Método para añadir una nueva marca y actualizar el estado
+  void _onMarcaAnadida(Marca nuevaMarca) {
+    setState(() {
+      final ejercicioId = nuevaMarca.ejercicioId;
+
+      if (_marcasPorEjercicio.containsKey(ejercicioId)) {
+        _marcasPorEjercicio[ejercicioId]!.add(nuevaMarca);
+        _marcasPorEjercicio[ejercicioId]!.sort((a, b) => a.fecha.compareTo(b.fecha));
+      } else {
+        _marcasPorEjercicio[ejercicioId] = [nuevaMarca];
+      }
+
+      // Reordenar ejercicios por cantidad de marcas
+      _ejercicios.sort((a, b) {
+        final countA = _marcasPorEjercicio[a.id]?.length ?? 0;
+        final countB = _marcasPorEjercicio[b.id]?.length ?? 0;
+        return countB.compareTo(countA);
+      });
+    });
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -89,10 +131,10 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFFF8E1), // amarillo muy claro para fondo
+        backgroundColor: const Color(0xFFFFF8E1),
         title: const Text(
           'Nueva Marca',
-          style: TextStyle(color: Color(0xFF1A1A1A)), // texto oscuro
+          style: TextStyle(color: Color(0xFF1A1A1A)),
         ),
         content: Form(
           key: _formKey,
@@ -161,8 +203,8 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFC107), // amarillo
-              foregroundColor: Colors.black, // texto negro
+              backgroundColor: const Color(0xFFFFC107),
+              foregroundColor: Colors.black,
             ),
             onPressed: () async {
               if (_formKey.currentState?.validate() ?? false) {
@@ -177,11 +219,14 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
                       valor: valorMarca,
                       fecha: DateTime.now(),
                     );
+
+                    // Guardar en la base de datos
                     await _opositorService.addMarca(nuevaMarca);
 
                     Navigator.of(context).pop();
 
-                    await _loadEjerciciosYMarcas();
+                    // Actualizar el estado local inmediatamente
+                    _onMarcaAnadida(nuevaMarca);
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Marca creada correctamente')),
@@ -215,12 +260,12 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navegarACrearMarca,
-        backgroundColor: const Color(0xFFFFC107), // amarillo
-        child: const Icon(Icons.add, color: Colors.black), // icono negro
+        backgroundColor: const Color(0xFFFFC107),
+        child: const Icon(Icons.add, color: Colors.black),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)))
-          : _ejercicios.isEmpty
+          : _ejercicios.isEmpty || _marcasPorEjercicio.isEmpty
           ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -236,9 +281,10 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
       )
           : ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _ejercicios.length,
+        itemCount: _ejercicios.where((e) => _marcasPorEjercicio.containsKey(e.id)).length,
         itemBuilder: (context, index) {
-          final ejercicio = _ejercicios[index];
+          final ejerciciosConMarcas = _ejercicios.where((e) => _marcasPorEjercicio.containsKey(e.id)).toList();
+          final ejercicio = ejerciciosConMarcas[index];
           final marcas = _marcasPorEjercicio[ejercicio.id] ?? [];
 
           return Card(
@@ -271,9 +317,10 @@ class _MisMarcasScreenState extends State<MisMarcasScreen> {
                   ),
                   const SizedBox(height: 16),
                   Grafica(
+                    key: ValueKey('${ejercicio.id}_${marcas.length}_${marcas.isNotEmpty ? marcas.last.fecha.millisecondsSinceEpoch : 0}'),
                     marcas: marcas,
                     ejercicioNombre: ejercicio.nombre,
-                    // valor máximo por defecto (ajusta según contexto)
+                    onDeleteMarca: _onMarcaEliminada,
                   ),
                   const SizedBox(height: 8),
                   if (marcas.isNotEmpty)

@@ -10,7 +10,7 @@ import '../models/marca.dart';
 import 'entrenamiento_service.dart';
 
 class OpositorService {
-  static const String _baseUrl = 'http://35.180.5.103:8080/api/opositor';
+  static const String _baseUrl = 'http://35.181.152.177:8080/api/opositor';
 
   // Obtiene el token de autenticación desde SharedPreferences
   Future<String?> _getToken() async {
@@ -28,8 +28,15 @@ class OpositorService {
   }
 
   // Apuntarse a un entrenamiento
-  Future<String> apuntarseAEntrenamiento(
-      int entrenamientoId, int userId) async {
+  Future<String?> apuntarseAEntrenamiento(int entrenamientoId, int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    int creditos = prefs.getInt('creditos') ?? 0;
+
+    // Verificar si hay créditos antes de hacer la petición
+    if (creditos <= 0) {
+      return 'No tienes suficientes créditos';
+    }
+
     final url = Uri.parse('$_baseUrl/inscripciones/apuntar');
     final headers = await _getHeaders();
 
@@ -43,27 +50,20 @@ class OpositorService {
         }),
       );
 
-      final data = jsonDecode(response.body);
-
       if (response.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        int creditos = prefs.getInt('creditos') ?? 0;
-        if (creditos > 0) {
-          await prefs.setInt('creditos', creditos - 1);
-        }
+        // Restar crédito después de una inscripción exitosa
+        await prefs.setInt('creditos', creditos - 1);
         return '¡Te has apuntado al entrenamiento correctamente!';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Error desconocido');
       }
     } catch (e) {
-      throw Exception('Error al apuntarse al entrenamiento: ${e.toString()}');
+
     }
+    return null;
   }
 
-  // Desapuntarse de un entrenamiento
-  Future<String> desapuntarseDeEntrenamiento(
-      int entrenamientoId, int userId) async {
+
+// Desapuntarse de un entrenamiento
+  Future<String?> desapuntarseDeEntrenamiento(int entrenamientoId, int userId) async {
     final url = Uri.parse('$_baseUrl/inscripciones/desapuntar');
     final headers = await _getHeaders();
 
@@ -79,18 +79,19 @@ class OpositorService {
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
-        int creditos = prefs.getInt('creditos') ?? 0; // Obtiene créditos actuales, 0 si no hay
+        int creditos = prefs.getInt('creditos') ?? 0;
         await prefs.setInt('creditos', creditos + 1);
 
         return '¡Te has desapuntado del entrenamiento correctamente!';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Error desconocido');
       }
     } catch (e) {
-      throw Exception('Error al desapuntarse del entrenamiento: ${e.toString()}');
+      // Silencioso: no hacer nada
     }
+
+    // Retorna null si falla
+    return null;
   }
+
 
   Future<List<Entrenamiento>> getEntrenamientosDelOpositor(int userId) async {
     try {
@@ -98,8 +99,6 @@ class OpositorService {
       final url = Uri.parse('$_baseUrl/entrenamientos/$userId');
 
       final response = await http.get(url, headers: headers);
-      debugPrint('Status Code: ${response.statusCode}');
-      debugPrint('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final body = response.body;
@@ -109,22 +108,19 @@ class OpositorService {
           final data = jsonDecode(body);
           if (data is List) {
             return data.map<Entrenamiento>((e) => Entrenamiento.fromJson(e)).toList();
-          } else {
-            throw Exception('Formato inesperado en la respuesta');
           }
         } else {
-          // Mensaje plano (no JSON), lo puedes usar para mostrarlo o devolver lista vacía
           debugPrint('Mensaje del servidor: $body');
-          return []; // o lanza una excepción si prefieres manejarlo arriba
         }
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['message'] ?? 'Error HTTP ${response.statusCode}');
+        debugPrint('Error HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       debugPrint('Error en getEntrenamientosDelOpositor: $e');
-      rethrow;
     }
+
+    // Si hay cualquier error o no se puede procesar, retorna lista vacía
+    return [];
   }
 
   // Añadir marca
@@ -248,11 +244,19 @@ class OpositorService {
 
     try {
       final response = await http.get(url, headers: headers);
+
+      // Imprimir el estado y si la respuesta es válida
+      debugPrint('Status code: ${response.statusCode}');
+      debugPrint('Content-Type: ${response.headers['content-type']}');
+      debugPrint('Body length: ${response.bodyBytes.length} bytes');
+
       return response;
     } catch (e) {
+      debugPrint('Error al cargar la foto: ${e.toString()}');
       throw Exception('Error al cargar la foto: ${e.toString()}');
     }
   }
+
 
   Future<List<dynamic>> getFutureTrainingsByOpposition(String oposicion) async {
     final url = Uri.parse('$_baseUrl/futurosEntrenos/$oposicion');

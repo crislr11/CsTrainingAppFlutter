@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/pago.dart';
 
 class PagoService {
-  final String _baseUrl = 'http://35.180.5.103:8080/api/pagos'; // Make sure this matches your server URL
+  final String _baseUrl = 'http://35.181.152.177:8080/api/pagos'; // Make sure this matches your server URL
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

@@ -15,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
 
   void _login() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -167,11 +169,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                         prefixIcon: Icon(Icons.lock, color: Colors.black),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                       ),
                       style: TextStyle(color: Colors.black),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       validator: (value) => value!.isEmpty ? "Ingrese su contraseña" : null,
                     ),
+
                     SizedBox(height: 20),
                     _isLoading
                         ? CircularProgressIndicator(

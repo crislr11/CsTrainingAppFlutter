@@ -3,16 +3,44 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 import '../models/marca.dart';
+import '../services/Opositor_service.dart';
 
-class Grafica extends StatelessWidget {
+class Grafica extends StatefulWidget {
   final List<Marca> marcas;
   final String ejercicioNombre;
+  final Function(Marca) onDeleteMarca;
 
   const Grafica({
     Key? key,
     required this.marcas,
     required this.ejercicioNombre,
+    required this.onDeleteMarca,
   }) : super(key: key);
+
+  @override
+  State<Grafica> createState() => _GraficaState();
+}
+
+class _GraficaState extends State<Grafica> {
+  final OpositorService _opositorService = OpositorService();
+  late List<Marca> _marcas;
+
+  @override
+  void initState() {
+    super.initState();
+    _marcas = List.from(widget.marcas);
+  }
+
+  @override
+  void didUpdateWidget(Grafica oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Actualizar las marcas cuando el widget padre cambie
+    if (widget.marcas != oldWidget.marcas) {
+      setState(() {
+        _marcas = List.from(widget.marcas);
+      });
+    }
+  }
 
   bool _esEjercicioDeTiempo(String nombreEjercicio) {
     final nombresTiempo = [
@@ -22,8 +50,7 @@ class Grafica extends StatelessWidget {
       '50 metros velocidad',
       '2000 resistencia',
     ];
-    return nombresTiempo.any(
-            (e) => nombreEjercicio.toLowerCase().contains(e.toLowerCase()));
+    return nombresTiempo.any((e) => nombreEjercicio.toLowerCase().contains(e.toLowerCase()));
   }
 
   double _calcularIntervalo(double rango) {
@@ -38,15 +65,70 @@ class Grafica extends StatelessWidget {
   String _formatearValor(double value, bool esTiempo) {
     if (esTiempo) {
       final minutos = value ~/ 1;
-      final segundos = ((value % 1) * 60).round();
-      return '${minutos}m ${segundos}s';
+      return '${minutos}min';
     }
     return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
   }
 
+  Future<void> _eliminarMarca(BuildContext context, Marca marca) async {
+    try {
+      await _opositorService.removeMarca(marca);
+
+      // Notificar al widget padre PRIMERO
+      widget.onDeleteMarca(marca);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Marca eliminada correctamente')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar marca: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _mostrarDialogoEliminar(BuildContext context, Marca marca) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFFF8E1),
+        title: const Text(
+          'Eliminar marca',
+          style: TextStyle(color: Color(0xFF1A1A1A)),
+        ),
+        content: Text(
+          '¿Deseas eliminar la marca del ${DateFormat('dd/MM/yyyy').format(marca.fecha)}?',
+          style: const TextStyle(color: Color(0xFF1A1A1A)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: Color(0xFFFFC107))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _eliminarMarca(context, marca);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final esTiempo = _esEjercicioDeTiempo(ejercicioNombre);
+    final marcas = _marcas;
+    final esTiempo = _esEjercicioDeTiempo(widget.ejercicioNombre);
 
     if (marcas.isEmpty) {
       return SizedBox(
@@ -66,9 +148,16 @@ class Grafica extends StatelessWidget {
     double maxValor = valores.reduce((a, b) => a > b ? a : b);
     final rango = maxValor - minValor;
 
-    // Ajustar los límites del eje Y
-    double minY = (minValor * 1).clamp(0, double.infinity);
-    double maxY = maxValor * 1.5;
+    // Ajustar los límites del eje Y con padding adicional
+    double minY = (minValor * 0.9).clamp(0, double.infinity);
+    double maxY = maxValor * 1.1;
+
+    // Añadir padding mínimo si el rango es muy pequeño
+    if (rango < 1) {
+      minY = minValor - 0.5;
+      maxY = maxValor + 0.5;
+    }
+
     final intervaloY = _calcularIntervalo(maxY - minY);
 
     // Para ejercicios de tiempo, invertimos la visualización
@@ -78,7 +167,7 @@ class Grafica extends StatelessWidget {
       maxY = temp * 0.9 + rango * 1.2;
     }
 
-    // Agrupar marcas por fecha (formato yyyy-MM-dd) para tooltip sin duplicados
+    // Agrupar marcas por fecha para tooltip sin duplicados
     Map<String, List<Marca>> marcasPorFecha = {};
     for (var m in marcas) {
       final key = DateFormat('yyyy-MM-dd').format(m.fecha);
@@ -89,12 +178,21 @@ class Grafica extends StatelessWidget {
     final graficaWidth = (marcas.length * 60 + extraPaddingRight).clamp(300, double.infinity).toDouble();
 
     return Container(
-      color: Colors.black,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       padding: const EdgeInsets.all(16),
       height: 350,
       child: Column(
         children: [
-
           const SizedBox(height: 8),
           Expanded(
             child: SingleChildScrollView(
@@ -133,7 +231,7 @@ class Grafica extends StatelessWidget {
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 40,
+                          reservedSize: 45,
                           interval: intervaloY,
                           getTitlesWidget: (value, meta) {
                             double displayValue = value;
@@ -197,6 +295,7 @@ class Grafica extends StatelessWidget {
                           return FlSpot(index, marca.valor);
                         }).toList(),
                         isCurved: true,
+                        curveSmoothness: 0.3,
                         color: const Color(0xFFFFC107),
                         barWidth: 3,
                         shadow: Shadow(
@@ -231,30 +330,41 @@ class Grafica extends StatelessWidget {
                     ],
                     lineTouchData: LineTouchData(
                       touchTooltipData: LineTouchTooltipData(
+                        tooltipBgColor: Colors.white.withOpacity(0.9),
+                        tooltipRoundedRadius: 8,
+                        tooltipPadding: const EdgeInsets.all(8),
                         getTooltipItems: (touchedSpots) {
                           return touchedSpots.map((touchedSpot) {
                             final idx = touchedSpot.spotIndex;
+                            if (idx >= marcas.length) return null;
+
                             final fechaClave = DateFormat('yyyy-MM-dd').format(marcas[idx].fecha);
                             final marcasEnFecha = marcasPorFecha[fechaClave]!;
 
                             if (marcasEnFecha.length > 1) {
-                              // Mostrar todas las marcas en el tooltip separadas por salto de línea
                               return LineTooltipItem(
-                                marcasEnFecha
-                                    .map((m) => _formatearValor(m.valor, esTiempo))
-                                    .join('\n'),
-                                const TextStyle(color: Colors.black),
+                                'Fecha: ${DateFormat('dd/MM/yyyy').format(marcas[idx].fecha)}\n${marcasEnFecha.map((m) => _formatearValor(m.valor, esTiempo)).join('\n')}',
+                                const TextStyle(color: Colors.black, fontSize: 12),
                               );
                             } else {
                               return LineTooltipItem(
-                                _formatearValor(marcas[idx].valor, esTiempo),
-                                const TextStyle(color: Colors.black),
+                                'Fecha: ${DateFormat('dd/MM/yyyy').format(marcas[idx].fecha)}\nMarca: ${_formatearValor(marcas[idx].valor, esTiempo)}',
+                                const TextStyle(color: Colors.black, fontSize: 12),
                               );
                             }
-                          }).toList();
+                          }).where((item) => item != null).cast<LineTooltipItem>().toList();
                         },
                       ),
-                      // Elimina la función touchCallback para no abrir diálogo al tocar
+                      touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
+                        if (event is FlTapUpEvent && touchResponse != null && touchResponse.lineBarSpots != null) {
+                          final spotIndex = touchResponse.lineBarSpots!.first.spotIndex;
+                          if (spotIndex < marcas.length) {
+                            final marcaSeleccionada = marcas[spotIndex];
+                            _mostrarDialogoEliminar(context, marcaSeleccionada);
+                          }
+                        }
+                      },
+                      handleBuiltInTouches: true,
                     ),
                   ),
                 ),

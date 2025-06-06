@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/entrenamiento.dart';
 
 
-const String baseUrl = "http://35.180.5.103:8080";
+const String baseUrl = "http://35.181.152.177:8080";
 
 // Obtiene el token de autenticación desde SharedPreferences
 Future<String?> _getToken() async {

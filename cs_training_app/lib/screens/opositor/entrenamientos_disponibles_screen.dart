@@ -68,17 +68,20 @@ class _EntrenamientosDisponiblesScreenState extends State<EntrenamientosDisponib
     try {
       final result = await _service.apuntarseAEntrenamiento(entrenamientoId, _userId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result)),
-      );
-      await _cargarEntrenamientos();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+
+      if (result != null) {
+        // Si hay un mensaje, lo mostramos
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result)),
+        );
+        await _cargarEntrenamientos();
+      }
+      // Si result es null, no se muestra nada (fallo silencioso)
+    } catch (_) {
+      // Errores silenciosos (no mostrar nada)
     }
   }
+
 
 
   @override

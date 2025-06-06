@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 
 class AdminService {
-  final String _baseUrl = 'http://35.180.5.103:8080/api/admin/user'; // para emulador Android
+  final String _baseUrl = 'http://35.181.152.177:8080/api/admin/user'; // para emulador Android
 
   // Obtiene el token de autenticación desde SharedPreferences
   Future<String?> _getToken() async {
@@ -91,14 +91,14 @@ class AdminService {
   }
 
   // Actualiza los detalles de un usuario
-  Future<User> updateUser(int id, Map<String, dynamic> userDetails) async {
+  Future<User> updateUser(int id, Map<String, dynamic> updateUserDto) async {
     final headers = await _getHeaders();
     final url = Uri.parse('$_baseUrl/update/$id');
 
     final response = await http.put(
       url,
       headers: headers,
-      body: jsonEncode(userDetails),
+      body: jsonEncode(updateUserDto),
     );
 
     if (response.statusCode == 200) {

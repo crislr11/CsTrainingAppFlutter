@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/usuario_ranking.dart';
 
 class RankingService {
-  final baseUrl = "http://35.180.5.103:8080";
+  final baseUrl = "http://35.181.152.177:8080";
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

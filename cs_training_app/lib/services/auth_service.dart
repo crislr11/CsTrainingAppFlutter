@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String _url = 'http://35.180.5.103:8080/api/auth/register';
+  final String _url = 'http://35.181.152.177:8080/api/auth/register';
   final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   Future<void> register(RegisterRequest registerRequest) async {
@@ -37,7 +37,7 @@ class AuthService {
   }
 
 
-  final String _loginUrl = 'http://35.180.5.103:8080/api/auth/login';
+  final String _loginUrl = 'http://35.181.152.177:8080/api/auth/login';
 
   Future<Map<String, dynamic>?> login(LoginRequest request) async {
     try {

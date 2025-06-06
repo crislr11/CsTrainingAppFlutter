@@ -12,6 +12,7 @@ class User {
   final int creditos;
   bool pagado;
   final List<Simulacro> simulacros;
+  final String? fotoUrl; // Nuevo campo para la URL de la foto
 
   User({
     required this.id,
@@ -24,6 +25,7 @@ class User {
     required this.creditos,
     required this.pagado,
     required this.simulacros,
+    this.fotoUrl, // Añadido como parámetro opcional
   });
 
   factory User.fromAuthResponse(AuthResponse authResponse) {
@@ -31,12 +33,12 @@ class User {
       id: authResponse.id,
       nombre: authResponse.nombre,
       nombreUsuario: authResponse.nombreUsuario,
-      email: authResponse.email,       // <-- Aquí asignamos email
+      email: authResponse.email,
       oposicion: authResponse.oposicion,
       role: authResponse.role,
-      active: true, // Asumo que siempre es true, pero puedes ajustarlo
+      active: true,
       creditos: authResponse.creditos,
-      pagado: authResponse.pagado ?? false, // Si `pagado` es null, se asigna false
+      pagado: authResponse.pagado ?? false,
       simulacros: authResponse.simulacros,
     );
   }
@@ -46,16 +48,16 @@ class User {
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? "Desconocido",
       nombreUsuario: json['nombreUsuario'] ?? "Desconocido",
-      email: json['email'] ?? "Sin email",       // <-- Aquí agregamos email desde JSON
+      email: json['email'] ?? "Sin email",
       oposicion: json['oposicion'] ?? "NINGUNA",
       role: json['role'] ?? "Usuario",
-      active: json['active'] ?? false, // Se asigna false si es null
+      active: json['active'] ?? false,
       creditos: json['creditos'] ?? 0,
-      pagado: json['pagado'] ?? false, // Si `pagado` es null, se asigna false
+      pagado: json['pagado'] ?? false,
       simulacros: (json['simulacros'] as List<dynamic>?)
           ?.map((e) => Simulacro.fromJson(e))
-          .toList() ??
-          [],
+          .toList() ?? [],
+      fotoUrl: json['fotoUrl'], // Añadido desde JSON
     );
   }
 
@@ -64,19 +66,50 @@ class User {
       'id': id,
       'nombre': nombre,
       'nombreUsuario': nombreUsuario,
-      'email': email,                   // <-- Incluido en JSON de salida
+      'email': email,
       'oposicion': oposicion,
       'role': role,
       'active': active,
       'creditos': creditos,
       'pagado': pagado,
       'simulacros': simulacros.map((s) => s.toJson()).toList(),
+      'fotoUrl': fotoUrl, // Incluido en JSON de salida
     };
   }
 
   Map<String, dynamic> toMinimalJson() {
     return {
       'id': id,
+      'fotoUrl': fotoUrl, // Opcional: incluir foto en versión mínima
     };
+  }
+
+  Map<String, dynamic> toUpdateDtoJson() {
+    return {
+      'username': nombreUsuario,
+      'email': email,
+      'isActive': active,
+      'oposicion': oposicion,
+      'creditos': creditos,
+      'pagado': pagado,
+      'fotoUrl': fotoUrl, // Incluido en DTO de actualización
+    };
+  }
+
+  // Método para actualizar solo la foto
+  User copyWith({String? fotoUrl}) {
+    return User(
+      id: id,
+      nombre: nombre,
+      nombreUsuario: nombreUsuario,
+      email: email,
+      oposicion: oposicion,
+      role: role,
+      active: active,
+      creditos: creditos,
+      pagado: pagado,
+      simulacros: simulacros,
+      fotoUrl: fotoUrl ?? this.fotoUrl,
+    );
   }
 }
