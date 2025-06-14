@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,8 +5,6 @@ import '../../models/user.dart';
 import '../../services/admin_services.dart';
 import '../../services/file_service.dart';
 import 'dart:typed_data' as typed_data;
-
-
 
 class ActivarUsuarios extends StatefulWidget {
   const ActivarUsuarios({super.key});
@@ -24,6 +20,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
   String searchQuery = '';
   bool? showOnlyActive;
   final FileService _fileService = FileService();
+  final TextEditingController _searchController = TextEditingController();
 
   final amarillo = const Color(0xFFFFC107);
   final negro = Colors.black;
@@ -43,6 +40,12 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
   void initState() {
     super.initState();
     _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUsers() async {
@@ -66,6 +69,25 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       final matchesActive = showOnlyActive == null || user.active == showOnlyActive;
       return matchesOposicion && matchesRole && matchesSearchQuery && matchesActive;
     }).toList();
+  }
+
+  // Función para obtener sugerencias de autocompletado
+  List<User> _getSuggestions(String query) {
+    List<User> filteredUsers = users.where((user) {
+      final matchesOposicion = selectedOposicion == 'todos' || user.oposicion == selectedOposicion;
+      final matchesRole = selectedRole == 'todos' || user.role == selectedRole;
+      final matchesActive = showOnlyActive == null || user.active == showOnlyActive;
+
+      return matchesOposicion && matchesRole && matchesActive;
+    }).toList();
+
+    if (query.isEmpty) {
+      return filteredUsers.take(10).toList(); // Mostrar los primeros 10 cuando no hay texto
+    }
+
+    return filteredUsers.where((user) {
+      return user.nombreUsuario.toLowerCase().contains(query.toLowerCase());
+    }).take(10).toList(); // Aumentar a 10 sugerencias cuando hay búsqueda
   }
 
   Future<void> _toggleUserStatus(int id) async {
@@ -165,6 +187,7 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       selectedRole = 'todos';
       searchQuery = '';
       showOnlyActive = null;
+      _searchController.clear();
     });
   }
 
@@ -273,18 +296,143 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
             ),
             const SizedBox(height: 16),
 
-            // Barra de búsqueda
-            TextField(
-              onChanged: (value) => setState(() => searchQuery = value),
-              decoration: InputDecoration(
-                labelText: 'Buscar usuario',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
+            // Barra de búsqueda con autocompletado
+            Autocomplete<User>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                return _getSuggestions(textEditingValue.text);
+              },
+              displayStringForOption: (User user) => user.nombreUsuario,
+              onSelected: (User selectedUser) {
+                setState(() {
+                  searchQuery = selectedUser.nombreUsuario;
+                  _searchController.text = selectedUser.nombreUsuario;
+                });
+              },
+              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                // Sincronizar con nuestro controlador
+                if (controller.text != _searchController.text) {
+                  _searchController.text = controller.text;
+                }
+
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  onChanged: (value) {
+                    setState(() => searchQuery = value);
+                    _searchController.text = value;
+                  },
+                  onSubmitted: (_) => onFieldSubmitted(),
+                  decoration: InputDecoration(
+                    labelText: 'Buscar usuario',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          searchQuery = '';
+                          _searchController.clear();
+                          controller.clear();
+                        });
+                      },
+                    )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      width: MediaQuery.of(context).size.width - 32, // Ancho completo menos padding
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final User user = options.elementAt(index);
+                          return InkWell(
+                            onTap: () => onSelected(user),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade200,
+                                    width: index < options.length - 1 ? 1 : 0,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: user.active ? Colors.green : Colors.red,
+                                    child: Text(
+                                      user.nombreUsuario[0].toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          user.nombreUsuario,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_formatOposicion(user.oposicion)} • ${user.role}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: user.active ? Colors.green : Colors.red,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      user.active ? 'Activo' : 'Inactivo',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
 
@@ -433,9 +581,6 @@ class _ActivarUsuariosScreenState extends State<ActivarUsuarios> {
       },
     );
   }
-
-
-
 
   Widget _buildDefaultAvatar() {
     return const Icon(Icons.person, size: 50, color: Colors.grey);

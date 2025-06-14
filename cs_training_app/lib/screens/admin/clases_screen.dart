@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';  // Importa intl para formatear fechas
+import 'package:intl/intl.dart';
 import '../../models/entrenamiento.dart';
 import '../../routes/routes.dart';
 import '../../services/entrenamiento_service.dart';
+import '../../widget/built_entrenamiento_card.dart';
 import 'crear_clases_screen.dart';
 
 class ClasesScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
   final EntrenamientoService entrenamientoService = EntrenamientoService();
   DateTime? fechaInicio;
   DateTime? fechaFin;
-  String? oposicionSeleccionada = 'todos'; // Oposición seleccionada
+  String? oposicionSeleccionada = 'todos';
 
   // Lista de oposiciones con sus valores originales
   final List<String> oposiciones = [
@@ -35,7 +36,7 @@ class _ClasesScreenState extends State<ClasesScreen> {
   // Función para convertir el valor de la oposición a una forma legible
   String _formatearOposicion(String oposicion) {
     if (oposicion == 'todos') return 'Todos';
-    return oposicion.replaceAll('_', ' '); // Mantiene el valor original pero reemplaza _ por espacio
+    return oposicion.replaceAll('_', ' ');
   }
 
   @override
@@ -54,10 +55,8 @@ class _ClasesScreenState extends State<ClasesScreen> {
       List<Entrenamiento> resultado;
 
       if (oposicion != null && oposicion != 'todos') {
-        // Si hay oposición, primero filtramos por oposición
         resultado = await entrenamientoService.getTrainingsByOpposition(oposicion);
         if (inicio != null && fin != null) {
-          // Luego filtramos manualmente por fechas (localmente)
           resultado = resultado.where((entrenamiento) {
             DateTime fechaEntrenamiento = entrenamiento.fecha;
             return fechaEntrenamiento.isAfter(inicio.subtract(const Duration(days: 1))) &&
@@ -65,10 +64,8 @@ class _ClasesScreenState extends State<ClasesScreen> {
           }).toList();
         }
       } else if (inicio != null && fin != null) {
-        // Si no hay oposición pero sí fechas
         resultado = await entrenamientoService.getTrainingsByDateRange(inicio, fin);
       } else {
-        // Si no hay nada filtrado
         resultado = await entrenamientoService.getAllTrainings();
       }
 
@@ -91,6 +88,175 @@ class _ClasesScreenState extends State<ClasesScreen> {
         noHayResultados = true;
       });
     }
+  }
+
+  Future<void> _confirmarEliminar(Entrenamiento entrenamiento) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFFF8E1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange[700], size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Confirmar eliminación',
+                style: TextStyle(
+                  color: Color(0xFF1A1A1A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Estás seguro de que deseas eliminar este entrenamiento?',
+              style: TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFC107).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFC107).withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _formatearOposicion(entrenamiento.oposicion),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(entrenamiento.fecha)}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Lugar: ${entrenamiento.lugar}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Alumnos inscritos: ${entrenamiento.alumnos.length}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Esta acción no se puede deshacer y eliminará todas las inscripciones.',
+              style: TextStyle(
+                color: Colors.red[600],
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Color(0xFF666666),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await entrenamientoService.deleteTraining(entrenamiento.id ?? 0);
+        _cargarEntrenamientos();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Entrenamiento eliminado correctamente'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Error al eliminar: $e')),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _editarEntrenamiento(Entrenamiento entrenamiento) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CrearClaseScreen(entrenamiento: entrenamiento),
+      ),
+    ).then((_) {
+      _cargarEntrenamientos();
+    });
   }
 
   Future<void> _seleccionarFechaInicio() async {
@@ -152,140 +318,178 @@ class _ClasesScreenState extends State<ClasesScreen> {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFFFC107),
+        foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.home, color: Colors.black),
           onPressed: () {
             Navigator.pushNamed(context, AppRoutes.adminHome);
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetearFiltro,
+            tooltip: 'Resetear filtros',
+          ),
+        ],
       ),
 
       // Body
       body: Column(
         children: [
-          // Filtro de fechas y oposición
-          Padding(
+          // Filtros mejorados
+          Container(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _seleccionarFechaInicio,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFC107),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      fechaInicio == null
-                          ? 'Fecha Inicio'
-                          : DateFormat('yyyy-MM-dd').format(fechaInicio!),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _seleccionarFechaFin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFC107),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      fechaFin == null
-                          ? 'Fecha Fin'
-                          : DateFormat('yyyy-MM-dd').format(fechaFin!),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                IconButton(
-                  icon: const Icon(Icons.search, color: Colors.black),
-                  onPressed: () {
-                    if (fechaInicio != null && fechaFin != null) {
-                      _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Selecciona ambas fechas')),
-                      );
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.black),
-                  onPressed: _resetearFiltro,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8E1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-          ),
-
-          // Desplegable para elegir oposición
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+            child: Column(
               children: [
-                const Text(
-                  'Oposición: ',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14), // fuente más pequeña
-                ),
-                const SizedBox(width: 10),
-                Expanded(  // para que ocupe espacio disponible sin overflow
-                  child: DropdownButton<String>(
-                    isExpanded: true,  // importante para que el dropdown ocupe todo el ancho del Expanded
-                    value: oposicionSeleccionada,
-                    items: oposiciones.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          _formatearOposicion(value),
-                          overflow: TextOverflow.ellipsis, // recorta texto largo con puntos suspensivos
-                          style: const TextStyle(fontSize: 14),
+                // Filtro de fechas
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _seleccionarFechaInicio,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFC107),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        oposicionSeleccionada = newValue;
-                      });
-                      _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
-                    },
-                  ),
+                        child: Text(
+                          fechaInicio == null
+                              ? 'Fecha Inicio'
+                              : DateFormat('dd/MM/yyyy').format(fechaInicio!),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _seleccionarFechaFin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFC107),
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          fechaFin == null
+                              ? 'Fecha Fin'
+                              : DateFormat('dd/MM/yyyy').format(fechaFin!),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (fechaInicio != null && fechaFin != null) {
+                          _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Selecciona ambas fechas')),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      ),
+                      child: const Icon(Icons.search),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Desplegable para elegir oposición
+                Row(
+                  children: [
+                    const Text(
+                      'Oposición: ',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFFFFC107)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: oposicionSeleccionada,
+                          underline: const SizedBox(),
+                          items: oposiciones.map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                _formatearOposicion(value),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              oposicionSeleccionada = newValue;
+                            });
+                            _cargarEntrenamientos(inicio: fechaInicio, fin: fechaFin, oposicion: oposicionSeleccionada);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          
+
           // Contador de entrenamientos encontrados
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Entrenamientos encontrados: ${entrenamientos.length}',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: const Color(0xFFFFC107).withOpacity(0.1),
+            child: Text(
+              'Entrenamientos encontrados: ${entrenamientos.length}',
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
 
-          // Lista de entrenamientos
+          // Lista de entrenamientos usando EntrenamientoCard
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)))
                 : noHayResultados
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('No hay entrenamientos disponibles'),
+                  Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No hay entrenamientos disponibles',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _resetearFiltro,
@@ -303,86 +507,44 @@ class _ClasesScreenState extends State<ClasesScreen> {
               itemCount: entrenamientos.length,
               itemBuilder: (context, index) {
                 final entrenamiento = entrenamientos[index];
-                final fechaHoraFormateada = DateFormat('d MMM y · HH:mm', 'es_ES')
-                    .format(entrenamiento.fecha);
 
-                return Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 3,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    title: Text(
-                      _formatearOposicion(entrenamiento.oposicion),
-                      style: GoogleFonts.rubik(fontWeight: FontWeight.w600),
+                return Stack(
+                  children: [
+                    // Usamos el EntrenamientoCard pero sin funcionalidad de apuntarse
+                    EntrenamientoCard(
+                      entrenamiento: entrenamiento,
+                      inscrito: false,
+                      onApuntarse: null,
+                      onDesapuntarse: null,
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '📅 $fechaHoraFormateada',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+
+                    // Botones de administración superpuestos
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        Text('📍 Lugar: ${entrenamiento.lugar}'),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                              onPressed: () => _editarEntrenamiento(entrenamiento),
+                              tooltip: 'Editar entrenamiento',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              onPressed: () => _confirmarEliminar(entrenamiento),
+                              tooltip: 'Eliminar entrenamiento',
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Confirmar eliminación'),
-                                content: const Text('¿Estás seguro de que deseas eliminar este entrenamiento?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.of(context).pop(true),
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                    child: const Text('Eliminar'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              try {
-                                await entrenamientoService.deleteTraining(entrenamiento.id ?? 0);
-                                _cargarEntrenamientos();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Entrenamiento eliminado')),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error al eliminar: $e')),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CrearClaseScreen(entrenamiento: entrenamiento),
-                              ),
-                            ).then((_) {
-                              _cargarEntrenamientos();
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 );
               },
             ),

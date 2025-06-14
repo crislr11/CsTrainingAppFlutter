@@ -114,6 +114,28 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
     }
   }
 
+  Future<void> _handleDesapuntarse(int entrenamientoId) async {
+    try {
+      final resultado = await _opositorService.desapuntarseDeEntrenamiento(entrenamientoId, _userId);
+
+      if (resultado != null && mounted) {
+        // Actualizar créditos y entrenamientos
+        await _updateCreditos();
+        await _loadEntrenamientos();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al desapuntarse: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<void> _loadUserPhoto() async {
     if (!mounted) return;
     setState(() => _loadingPhoto = true);
@@ -209,30 +231,44 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
   Widget _buildProfileHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
         color: Colors.black87,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-        boxShadow: [BoxShadow(
-          color: Colors.black.withOpacity(0.5),
-          offset: const Offset(0, 5),
-          blurRadius: 12,
-        )],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           GestureDetector(
             onTap: _pickAndUploadImage,
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: const Color(0xFFFFC107),
-              backgroundImage: _image != null ? FileImage(_image!) : null,
-              child: _loadingPhoto
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : _image == null
-                  ? const Icon(Icons.person, size: 40, color: Colors.white)
-                  : null,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFC107).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 38,
+                backgroundColor: const Color(0xFFFFC107),
+                backgroundImage: _image != null ? FileImage(_image!) : null,
+                child: _loadingPhoto
+                    ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                    : _image == null
+                    ? const Icon(Icons.person_add, size: 35, color: Colors.black87)
+                    : null,
+              ),
             ),
           ),
           const SizedBox(width: 20),
@@ -244,27 +280,40 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
                   _nombreCompleto,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _nombreUsuario,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 20,
-                    fontStyle: FontStyle.italic,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.verified_user,
+                      color: Color(0xFFFFC107),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _nombreUsuario,
+                        style: const TextStyle(
+                          color: Color(0xFFFFC107),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _buildUserDetail(Icons.email, _email),
-                const SizedBox(height: 8),
-                _buildUserDetail(Icons.school, _formatearOposicion(_oposicion)),
-                const SizedBox(height: 8),
-                _buildUserDetail(Icons.monetization_on, 'Créditos: $_creditos'),
+                const SizedBox(height: 12),
+                _buildUserDetail(Icons.email_outlined, _email),
+                const SizedBox(height: 6),
+                _buildUserDetail(Icons.school_outlined, _formatearOposicion(_oposicion)),
+                const SizedBox(height: 10),
+                _buildCreditosDetail(),
               ],
             ),
           ),
@@ -276,12 +325,16 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
   Widget _buildUserDetail(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFFFC107), size: 18),
-        const SizedBox(width: 12),
+        Icon(icon, color: const Color(0xFFFFC107), size: 16),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(color: Colors.white70, fontSize: 18),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -289,35 +342,77 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
     );
   }
 
+  Widget _buildCreditosDetail() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFC107).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFFC107).withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.stars,
+            color: Color(0xFFFFC107),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Créditos: ',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            '$_creditos',
+            style: const TextStyle(
+              color: Color(0xFFFFC107),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80,
-        height: 80,
+        width: 70,
+        height: 70,
         decoration: BoxDecoration(
           color: Colors.amber,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.amber.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 30, color: Colors.black),
+            Icon(icon, size: 26, color: Colors.black),
             const SizedBox(height: 4),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -327,44 +422,115 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
 
   Widget _buildEntrenamientosList() {
     if (_loadingEntrenamientos) {
-      return const Center(child: CircularProgressIndicator());
+      return const SizedBox(
+        height: 100,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFFFC107),
+            strokeWidth: 3,
+          ),
+        ),
+      );
     }
 
     if (_entrenamientos.isEmpty) {
-      return Center(
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
         child: Column(
           children: [
-            const Text('No tienes entrenamientos asignados'),
-            const SizedBox(height: 20),
-            ElevatedButton(
+            Icon(
+              Icons.fitness_center,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No tienes entrenamientos asignados',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => EntrenamientosDisponiblesScreen(oposicion: _oposicion),
                 ),
               ).then((_) => _updateCreditos()),
-              child: const Text('Ver entrenamientos disponibles'),
+              icon: const Icon(Icons.search, size: 16),
+              label: const Text(
+                'Ver entrenamientos',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC107),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
           ],
         ),
       );
     }
 
-    return SizedBox(
-      height: 300,
-      child: ListView.separated(
-        itemCount: _entrenamientos.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final entrenamiento = _entrenamientos[index];
-          return EntrenamientoCard(
-            entrenamiento: entrenamiento,
-            inscrito: true,
-            onDesapuntarse: () => _opositorService.desapuntarseDeEntrenamiento(
-                entrenamiento.id!, _userId),
-          );
-        },
-      ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFC107).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.fitness_center,
+                  color: Color(0xFFFFC107),
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Mis Entrenamientos (${_entrenamientos.length})',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView.separated(
+            itemCount: _entrenamientos.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemBuilder: (context, index) {
+              final entrenamiento = _entrenamientos[index];
+              return EntrenamientoCard(
+                  entrenamiento: entrenamiento,
+                  inscrito: true,
+                  onDesapuntarse: () => _handleDesapuntarse(entrenamiento.id!)
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -385,83 +551,112 @@ class _OpositorProfileScreenState extends State<OpositorPorfileScreen>
         appBar: AppBar(
           title: Text(
             'Perfil de Usuario',
-            style: GoogleFonts.rubik(fontWeight: FontWeight.w700),
+            style: GoogleFonts.rubik(fontWeight: FontWeight.w700, fontSize: 18),
           ),
           backgroundColor: const Color(0xFFFFC107),
+          foregroundColor: Colors.black,
+          elevation: 0,
+          toolbarHeight: 50,
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.refresh, size: 18),
+              ),
               onPressed: () {
                 setState(() {
                   _updateCreditos();
                   _loadUserData();
                 });
               },
+              tooltip: 'Actualizar',
             ),
             IconButton(
-              icon: const Icon(Icons.logout),
+              icon: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.logout, size: 18, color: Colors.red),
+              ),
               onPressed: _logout,
+              tooltip: 'Salir',
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildProfileHeader(),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+        body: Column(
+          children: [
+            // Header del perfil
+            _buildProfileHeader(),
+
+            // Contenido principal en Expanded
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                   children: [
-                    _buildActionButton(
-                      Icons.fitness_center,
-                      'Clases',
-                          () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EntrenamientosDisponiblesScreen(oposicion: _oposicion),
-                        ),
+                    // Botones de acción
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildActionButton(
+                            Icons.fitness_center,
+                            'Clases',
+                                () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EntrenamientosDisponiblesScreen(oposicion: _oposicion),
+                              ),
+                            ).then((_) => _updateCreditos()),
+                          ),
+                          _buildActionButton(
+                            Icons.assignment,
+                            'Simulacros',
+                                () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MisSimulacrosScreen(userId: _userId),
+                              ),
+                            ),
+                          ),
+                          _buildActionButton(
+                            Icons.attach_money,
+                            'Pagos',
+                                () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MisPagosScreen(userId: _userId),
+                              ),
+                            ),
+                          ),
+                          _buildActionButton(
+                            Icons.playlist_add_check,
+                            'Marcas',
+                                () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MisMarcasScreen(userId: _userId),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    _buildActionButton(
-                      Icons.assignment,
-                      'Simulacros',
-                          () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MisSimulacrosScreen(userId: _userId),
-                        ),
-                      ),
-                    ),
-                    _buildActionButton(
-                      Icons.attach_money,
-                      'Pagos',
-                          () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MisPagosScreen(userId: _userId),
-                        ),
-                      ),
-                    ),
-                    _buildActionButton(
-                      Icons.playlist_add_check,
-                      'Mis Marcas',
-                          () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MisMarcasScreen(userId: _userId),
-                        ),
-                      ),
-                    ),
+
+                    // Lista de entrenamientos
+                    _buildEntrenamientosList(),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildEntrenamientosList(),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
